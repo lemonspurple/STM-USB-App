@@ -4,7 +4,7 @@ import measure
 import adjust
 
 
-class USBConnectionApp:
+class EspApiClient:
     def __init__(self, master):
         self.master = master
         self.master.title("500 EUR RTM - Connecting ...")
@@ -87,5 +87,5 @@ class USBConnectionApp:
 
 if __name__ == "__main__":
     root = Tk()
-    app = USBConnectionApp(root)
+    esp_api_client = EspApiClient(root)
     root.mainloop()

@@ -1,3 +1,5 @@
+from tkinter import Frame, Text, Button, END
+
 class MeasureApp:
     def __init__(self, master):
         self.master = master
