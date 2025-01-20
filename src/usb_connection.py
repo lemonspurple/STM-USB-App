@@ -14,7 +14,7 @@ class USBConnection:
         self.dispatcher_callback = dispatcher_callback
         self.connection_established = False
         self.data_queue = queue.Queue()
-        self.receiver = None
+        self.esp_to_queue = None
         self.waiting_for_idle = False
 
     def establish_connection(self):
@@ -33,21 +33,12 @@ class USBConnection:
 
     def check_esp_idle_response(self):
         if self.is_connected:
-           
-            # Send a request to the connected device to verify the connection
-            self.send_request(chr(3))
-            # Set the flag to wait for the "IDLE" response
+
             self.waiting_for_idle = True
-
-   
-
-    def send_request(self, request):
-        if self.is_connected:
-            # Send a request to the connected device
-            self.connection.write(request.encode())
+            self.connection.write(chr(3).encode())
             # Start the receiving loop in a background thread
-            self.receiver = USBReceive(self.connection, self.data_queue)
-            self.receiver.start_receiving()
+            self.esp_to_queue = USBReceive(self.connection, self.data_queue)
+            self.esp_to_queue.start_esp_to_queue()
 
     def read_queue(self):
         while not self.data_queue.empty():

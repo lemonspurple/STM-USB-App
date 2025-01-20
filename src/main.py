@@ -88,8 +88,8 @@ class EspApiClient:
 
     def on_closing(self):
         # Stop receiving data
-        if self.usb_conn.receiver:
-            self.usb_conn.receiver.stop_receiving()
+        if self.usb_conn.esp_to_queue:
+            self.usb_conn.esp_to_queue.stop_receiving()
         # Close the application
         self.master.destroy()
 
