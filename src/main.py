@@ -3,7 +3,6 @@ import usb_connection
 import measure
 import adjust
 
-
 class EspApiClient:
     def __init__(self, master):
         self.master = master
@@ -26,13 +25,13 @@ class EspApiClient:
         self.connect_button = Button(self.master, text="Connect", command=self.connect)
         self.connect_button.pack()
 
-        # Create a button to open the MEASURE interface
+        # Create a button to open the MEASURE interface, initially hidden
         self.measure_button = Button(self.master, text="MEASURE", command=self.open_measure)
-        self.measure_button.pack()
+        self.measure_button.pack_forget()
 
-        # Create a button to open the ADJUST interface
+        # Create a button to open the ADJUST interface, initially hidden
         self.adjust_button = Button(self.master, text="ADJUST", command=self.open_adjust)
-        self.adjust_button.pack()
+        self.adjust_button.pack_forget()
 
         # Initialize the USB connection handler
         self.usb_conn = usb_connection.USBConnection(self.update_terminal, self.dispatch_data)
@@ -46,6 +45,9 @@ class EspApiClient:
             self.master.title(f"500 EUR RTM - Connected to {self.usb_conn.port}")
             # Hide the connection GUI
             self.connect_button.pack_forget()
+            # Show the MEASURE and ADJUST buttons
+            self.measure_button.pack()
+            self.adjust_button.pack()
         else:
             self.update_terminal("Failed to establish connection.")
 
