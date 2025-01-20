@@ -40,10 +40,10 @@ class EspApiClient:
 
         # Initialize the USB connection handler
         self.usb_conn = usb_connection.USBConnection(
-            self.update_terminal, self.dispatch_data
+            self.update_terminal, self.dispatch_queue
         )
         # Periodically process the queue
-        self.master.after(100, self.process_queue)
+        self.master.after(100, self.read_queue_loop)
 
     def connect(self):
         # Attempt to establish a USB connection
@@ -63,11 +63,11 @@ class EspApiClient:
         self.terminal.insert(END, message + "\n")
         self.terminal.see(END)
 
-    def process_queue(self):
+    def read_queue_loop(self):
         self.usb_conn.read_queue()
-        self.master.after(100, self.process_queue)
+        self.master.after(100, self.read_queue_loop)
 
-    def dispatch_data(self, message):
+    def dispatch_queue(self, message):
         # Dispatch data to the appropriate GUI
         if message.startswith("MEASURE"):
             # Send data to the MEASURE interface
@@ -89,7 +89,7 @@ class EspApiClient:
     def on_closing(self):
         # Stop receiving data
         if self.usb_conn.esp_to_queue:
-            self.usb_conn.esp_to_queue.stop_receiving()
+            self.usb_conn.esp_to_queue.stop_esp_to_queue()
         # Close the application
         self.master.destroy()
 

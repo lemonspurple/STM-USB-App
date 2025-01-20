@@ -43,9 +43,9 @@ class USBConnection:
     def read_queue(self):
         while not self.data_queue.empty():
             message = self.data_queue.get()
-            self.dispatcher_callback(message)
 
             # Wait for IDLE after connection start and sending CHR(3)
             if self.waiting_for_idle and message == "IDLE":
                 self.connection_established = True
                 self.waiting_for_idle = False
+            self.dispatcher_callback(message)

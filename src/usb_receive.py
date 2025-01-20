@@ -1,5 +1,4 @@
 import threading
-import queue
 
 
 class USBReceive:
@@ -12,7 +11,7 @@ class USBReceive:
         self.running = True
         threading.Thread(target=self.esp_to_queue_loop, daemon=True).start()
 
-    def stop_receiving(self):
+    def stop_esp_to_queue(self):
         self.running = False
 
     def esp_to_queue_loop(self):
