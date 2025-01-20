@@ -2,6 +2,7 @@ import serial
 import settings
 import queue
 from usb_receive import USBReceive
+import threading
 
 
 class USBConnection:
@@ -16,6 +17,7 @@ class USBConnection:
         self.data_queue = queue.Queue()
         self.esp_to_queue = None
         self.waiting_for_idle = False
+        self.running = False
 
     def establish_connection(self):
         try:
@@ -39,13 +41,24 @@ class USBConnection:
             # Start the receiving loop in a background thread
             self.esp_to_queue = USBReceive(self.connection, self.data_queue)
             self.esp_to_queue.start_esp_to_queue()
+            self.start_read_queue()
 
-    def read_queue(self):
-        while not self.data_queue.empty():
-            message = self.data_queue.get()
+    def start_read_queue(self):
+        # Start a background thread to read the queue
+        self.reading_thread = threading.Thread(target=self.read_queue_loop, daemon=True)
+        self.running = True
+        self.reading_thread.start() 
 
-            # Wait for IDLE after connection start and sending CHR(3)
-            if self.waiting_for_idle and message == "IDLE":
-                self.connection_established = True
-                self.waiting_for_idle = False
-            self.dispatcher_callback(message)
+    def read_queue_loop(self):
+        while self.running:
+            while not self.data_queue.empty():
+                message = self.data_queue.get()
+
+                # Wait for IDLE after connection start and sending CHR(3)
+                if self.waiting_for_idle and message == "IDLE":
+                    self.connection_established = True
+                    self.waiting_for_idle = False
+                self.dispatcher_callback(message)
+    
+    def stop_estop_read_queue(self):
+        self.running = False
