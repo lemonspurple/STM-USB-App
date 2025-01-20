@@ -55,3 +55,6 @@ dmypy.json
 # Windows
 Thumbs.db
 ehthumbs.db
+
+# Byte-compiled / optimized / DLL files
+__pycache__/

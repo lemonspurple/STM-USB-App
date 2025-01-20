@@ -3,6 +3,7 @@ import settings
 import queue
 from usb_receive import USBReceive
 
+
 class USBConnection:
     def __init__(self, update_terminal_callback, dispatcher_callback):
         self.port = settings.USB_PORT
@@ -22,7 +23,7 @@ class USBConnection:
             self.connection = serial.Serial(self.port, self.baudrate, timeout=1)
             self.is_connected = True
             # Check the connection by sending a request
-            self.check_connection()
+            self.check_esp_idle_response()
             return True
         except serial.SerialException as e:
             # Handle any errors that occur during connection establishment
@@ -30,18 +31,15 @@ class USBConnection:
             self.is_connected = False
             return False
 
-    def check_connection(self):
+    def check_esp_idle_response(self):
         if self.is_connected:
-            # Clear the receive queue before sending the request
-            self.flush_queue()
+           
             # Send a request to the connected device to verify the connection
             self.send_request(chr(3))
             # Set the flag to wait for the "IDLE" response
             self.waiting_for_idle = True
 
-    def flush_queue(self):
-        with self.data_queue.mutex:
-            self.data_queue.queue.clear()
+   
 
     def send_request(self, request):
         if self.is_connected:
@@ -51,12 +49,11 @@ class USBConnection:
             self.receiver = USBReceive(self.connection, self.data_queue)
             self.receiver.start_receiving()
 
-    def process_queue(self):
+    def read_queue(self):
         while not self.data_queue.empty():
             message = self.data_queue.get()
             self.dispatcher_callback(message)
-            
-            
+
             # Wait for IDLE after connection start and sending CHR(3)
             if self.waiting_for_idle and message == "IDLE":
                 self.connection_established = True

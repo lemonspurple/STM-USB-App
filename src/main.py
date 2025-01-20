@@ -3,6 +3,7 @@ import usb_connection
 import measure
 import adjust
 
+
 class EspApiClient:
     def __init__(self, master):
         self.master = master
@@ -14,27 +15,33 @@ class EspApiClient:
 
         # Create a text widget to act as a terminal
         self.terminal = Text(self.frame, height=15, width=50)
-        self.terminal.pack(side='left', fill='both', expand=True)
+        self.terminal.pack(side="left", fill="both", expand=True)
 
         # Create a scrollbar for the terminal
         self.scrollbar = Scrollbar(self.frame, command=self.terminal.yview)
-        self.scrollbar.pack(side='right', fill='y')
-        self.terminal['yscrollcommand'] = self.scrollbar.set
+        self.scrollbar.pack(side="right", fill="y")
+        self.terminal["yscrollcommand"] = self.scrollbar.set
 
         # Create a button to establish USB connection
         self.connect_button = Button(self.master, text="Connect", command=self.connect)
         self.connect_button.pack()
 
         # Create a button to open the MEASURE interface, initially hidden
-        self.measure_button = Button(self.master, text="MEASURE", command=self.open_measure)
+        self.measure_button = Button(
+            self.master, text="MEASURE", command=self.open_measure
+        )
         self.measure_button.pack_forget()
 
         # Create a button to open the ADJUST interface, initially hidden
-        self.adjust_button = Button(self.master, text="ADJUST", command=self.open_adjust)
+        self.adjust_button = Button(
+            self.master, text="ADJUST", command=self.open_adjust
+        )
         self.adjust_button.pack_forget()
 
         # Initialize the USB connection handler
-        self.usb_conn = usb_connection.USBConnection(self.update_terminal, self.dispatch_data)
+        self.usb_conn = usb_connection.USBConnection(
+            self.update_terminal, self.dispatch_data
+        )
         # Periodically process the queue
         self.master.after(100, self.process_queue)
 
@@ -53,11 +60,11 @@ class EspApiClient:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
-        self.terminal.insert(END, message + '\n')
+        self.terminal.insert(END, message + "\n")
         self.terminal.see(END)
 
     def process_queue(self):
-        self.usb_conn.process_queue()
+        self.usb_conn.read_queue()
         self.master.after(100, self.process_queue)
 
     def dispatch_data(self, message):
