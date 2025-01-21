@@ -38,7 +38,7 @@ class EspApiClient:
         self.file_menu.add_command(label="Settings", command=self.open_settings)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.on_closing)
-        
+
         # Create a Measure menu
         self.measure_menu = Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
@@ -48,7 +48,7 @@ class EspApiClient:
         self.adjust_menu = Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Adjust", menu=self.adjust_menu)
         self.adjust_menu.add_command(label="Open Adjust", command=self.open_adjust)
-        
+
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
         self.terminal_frame.pack(side="left", fill="y")
@@ -62,14 +62,11 @@ class EspApiClient:
         self.scrollbar.pack(side="right", fill="y")
         self.terminal["yscrollcommand"] = self.scrollbar.set
 
-   
         # Create a button to open the MEASURE interface, initially hidden
         self.measure_button = Button(
             self.master, text="MEASURE", command=self.open_measure
         )
         self.measure_button.pack_forget()
-
-        
 
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
@@ -144,7 +141,7 @@ class EspApiClient:
                 self.master.title(f"500 EUR RTM - Connected to {self.usb_conn.port}")
                 # Show the MEASURE and ADJUST buttons
                 self.measure_button.pack()
-             
+
                 STATUS = "IDLE"
                 return True
             else:
@@ -183,9 +180,10 @@ class EspApiClient:
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the MEASURE interface in the app frame
-        measure.MeasureWindow(self.app_frame)
+        measure.MeasureApp(self.app_frame)
 
     def open_adjust(self):
+        self.measure_button.pack_forget()
         global STATUS
         STATUS = "ADJUST"
         # Clear the app frame
