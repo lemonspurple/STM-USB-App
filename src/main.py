@@ -1,4 +1,4 @@
-from tkinter import Tk, Frame, Button, Text, Scrollbar, END, Toplevel
+from tkinter import Tk, Frame, Button, Text, Scrollbar, END, Toplevel, messagebox
 import usb_connection
 import measure
 from adjust import AdjustApp
@@ -61,7 +61,8 @@ class EspApiClient:
                 self.adjust_button.pack()
                 STATUS = "IDLE"
             else:
-                self.update_terminal("Failed to establish connection.")
+                messagebox.showerror("Connection Error", "Failed to establish connection.")
+                
                 self.master.after(0, self.master.destroy)
         except Exception as e:
             self.update_terminal(f"Error establishing connection: {e}")
