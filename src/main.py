@@ -1,4 +1,16 @@
-from tkinter import Tk, Frame, Button, Text, Scrollbar, END, Toplevel, messagebox, Menu, Listbox, SINGLE
+from tkinter import (
+    Tk,
+    Frame,
+    Button,
+    Text,
+    Scrollbar,
+    END,
+    Toplevel,
+    messagebox,
+    Menu,
+    Listbox,
+    SINGLE,
+)
 import usb_connection
 import measure
 from adjust import AdjustApp
@@ -7,7 +19,8 @@ import serial.tools.list_ports
 import settings
 
 # Define the global STATUS variable
-STATUS = 'INIT'
+STATUS = "INIT"
+
 
 class EspApiClient:
     def __init__(self, master):
@@ -30,35 +43,43 @@ class EspApiClient:
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
-        self.terminal_frame.pack(side='left', fill='y')
+        self.terminal_frame.pack(side="left", fill="y")
 
         # Create a text widget to act as a terminal
         self.terminal = Text(self.terminal_frame, height=15, width=30)
-        self.terminal.pack(side='left', fill='both', expand=False)
+        self.terminal.pack(side="left", fill="both", expand=False)
 
         # Create a scrollbar for the terminal
         self.scrollbar = Scrollbar(self.terminal_frame, command=self.terminal.yview)
-        self.scrollbar.pack(side='right', fill='y')
-        self.terminal['yscrollcommand'] = self.scrollbar.set
+        self.scrollbar.pack(side="right", fill="y")
+        self.terminal["yscrollcommand"] = self.scrollbar.set
 
         # Create a button to establish USB connection
-        self.connect_button = Button(self.master, text="Connect", command=self.select_port)
+        self.connect_button = Button(
+            self.master, text="Connect", command=self.select_port
+        )
         self.connect_button.pack()
 
         # Create a button to open the MEASURE interface, initially hidden
-        self.measure_button = Button(self.master, text="MEASURE", command=self.open_measure)
+        self.measure_button = Button(
+            self.master, text="MEASURE", command=self.open_measure
+        )
         self.measure_button.pack_forget()
 
         # Create a button to open the ADJUST interface, initially hidden
-        self.adjust_button = Button(self.master, text="ADJUST", command=self.open_adjust)
+        self.adjust_button = Button(
+            self.master, text="ADJUST", command=self.open_adjust
+        )
         self.adjust_button.pack_forget()
 
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
-        self.app_frame.pack(side='right', fill='both', expand=True)
+        self.app_frame.pack(side="right", fill="both", expand=True)
 
         # Initialize the USB connection handler
-        self.usb_conn = usb_connection.USBConnection(self.update_terminal, self.dispatch_data)
+        self.usb_conn = usb_connection.USBConnection(
+            self.update_terminal, self.dispatch_data
+        )
 
         # Attempt to establish a USB connection
         if not self.connect():
@@ -67,37 +88,38 @@ class EspApiClient:
     def select_port(self):
         self.port_dialog = Toplevel(self.master)
         self.port_dialog.title("Select Port")
-    
+
         # Center the dialog on the screen
-        self.port_dialog.geometry("300x300+{}+{}".format(
-            int(self.master.winfo_screenwidth() / 2 - 150),
-            int(self.master.winfo_screenheight() / 2 - 150)
-        ))
-    
+        self.port_dialog.geometry(
+            "300x300+{}+{}".format(
+                int(self.master.winfo_screenwidth() / 2 - 150),
+                int(self.master.winfo_screenheight() / 2 - 150),
+            )
+        )
+
         self.port_listbox = Listbox(self.port_dialog, selectmode=SINGLE)
         self.port_listbox.pack(fill="both", expand=True, padx=10, pady=10)
-    
+
         self.refresh_ports()
-    
+
         # Create a frame to hold the buttons
         button_frame = Frame(self.port_dialog)
         button_frame.pack(fill="both", expand=True, padx=10, pady=10)
-    
+
         self.select_button = Button(
             button_frame, text="Select", command=self.set_selected_port
         )
         self.select_button.pack(side="left", padx=10, pady=10)
-    
+
         self.refresh_button = Button(
             button_frame, text="Refresh", command=self.refresh_ports
         )
         self.refresh_button.pack(side="right", padx=10, pady=10)
+
         self.port_dialog.transient(self.master)
         self.port_dialog.grab_set()
         self.master.wait_window(self.port_dialog)
-    
-        
-    
+
     def refresh_ports(self):
         self.port_listbox.delete(0, END)
         ports = list(serial.tools.list_ports.comports())
@@ -129,17 +151,17 @@ class EspApiClient:
                 STATUS = "IDLE"
                 return True
             else:
-                #messagebox.showerror("Connection Error", "Failed to establish connection.")
                 return False
-                
         except Exception as e:
-            self.update_terminal(f"Error establishing connection: BBBBB {e}")
-            messagebox.showerror("Connection Error", f"Error establishing connection: {e}")
+            self.update_terminal(f"Error establishing connection: {e}")
+            messagebox.showerror(
+                "Connection Error", f"Error establishing connection: {e}"
+            )
 
     def update_terminal(self, message):
         # Update the terminal with a new message
         if self.terminal:
-            self.terminal.insert(END, message + '\n')
+            self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
 
     def read_queue_loop(self):
@@ -159,7 +181,7 @@ class EspApiClient:
 
     def open_measure(self):
         global STATUS
-        STATUS = 'MEASURE'
+        STATUS = "MEASURE"
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
@@ -168,7 +190,7 @@ class EspApiClient:
 
     def open_adjust(self):
         global STATUS
-        STATUS = 'ADJUST'
+        STATUS = "ADJUST"
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
