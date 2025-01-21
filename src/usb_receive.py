@@ -9,13 +9,17 @@ class USBReceive:
 
     def start_esp_to_queue(self):
         self.running = True
-        threading.Thread(target=self.esp_to_queue_loop, daemon=True).start()
+        threading.Thread(target=self.esp_to_queue, daemon=True).start()
 
     def stop_esp_to_queue(self):
         self.running = False
 
-    def esp_to_queue_loop(self):
+    def esp_to_queue(self):
         while self.running:
-            response = self.connection.readline().decode().strip()
-            if response:
-                self.data_queue.put(response)
+            try:
+                response = self.connection.readline().decode().strip()
+                if response:
+                    self.data_queue.put(response)
+            except Exception as e:
+                print(f"Error in esp_to_queue_loop: {e}")
+                self.running = False

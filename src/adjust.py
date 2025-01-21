@@ -1,8 +1,9 @@
+from tkinter import Label, Button
+
 class AdjustApp:
     def __init__(self, master):
         self.master = master
-        self.master.title("Adjust Application")
-        
+             
         # Layout for adjustment controls
         self.label = Label(master, text="Adjust Parameters")
         self.label.pack(pady=10)
