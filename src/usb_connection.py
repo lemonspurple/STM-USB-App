@@ -29,7 +29,7 @@ class USBConnection:
             return True
         except serial.SerialException as e:
             # Handle any errors that occur during connection establishment
-            self.update_terminal(f"Error establishing connection: {e}")
+            # self.update_terminal(f"Error establishing connection AAAAA : {e}")
             self.is_connected = False
             return False
 

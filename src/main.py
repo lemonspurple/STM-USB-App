@@ -61,37 +61,43 @@ class EspApiClient:
         self.usb_conn = usb_connection.USBConnection(self.update_terminal, self.dispatch_data)
 
         # Attempt to establish a USB connection
-        self.connect()
+        if not self.connect():
+            self.select_port()
 
     def select_port(self):
         self.port_dialog = Toplevel(self.master)
         self.port_dialog.title("Select Port")
-
+    
         # Center the dialog on the screen
-        self.port_dialog.geometry("300x200+{}+{}".format(
+        self.port_dialog.geometry("300x300+{}+{}".format(
             int(self.master.winfo_screenwidth() / 2 - 150),
-            int(self.master.winfo_screenheight() / 2 - 100)
+            int(self.master.winfo_screenheight() / 2 - 150)
         ))
-
+    
         self.port_listbox = Listbox(self.port_dialog, selectmode=SINGLE)
         self.port_listbox.pack(fill="both", expand=True, padx=10, pady=10)
-
+    
         self.refresh_ports()
-
+    
         # Create a frame to hold the buttons
         button_frame = Frame(self.port_dialog)
-        button_frame.pack(fill="x", padx=10, pady=10)
-
+        button_frame.pack(fill="both", expand=True, padx=10, pady=10)
+    
         self.select_button = Button(
             button_frame, text="Select", command=self.set_selected_port
         )
         self.select_button.pack(side="left", padx=10, pady=10)
-
+    
         self.refresh_button = Button(
             button_frame, text="Refresh", command=self.refresh_ports
         )
         self.refresh_button.pack(side="right", padx=10, pady=10)
-
+        self.port_dialog.transient(self.master)
+        self.port_dialog.grab_set()
+        self.master.wait_window(self.port_dialog)
+    
+        
+    
     def refresh_ports(self):
         self.port_listbox.delete(0, END)
         ports = list(serial.tools.list_ports.comports())
@@ -121,10 +127,13 @@ class EspApiClient:
                 self.measure_button.pack()
                 self.adjust_button.pack()
                 STATUS = "IDLE"
+                return True
             else:
-                messagebox.showerror("Connection Error", "Failed to establish connection.")
+                #messagebox.showerror("Connection Error", "Failed to establish connection.")
+                return False
+                
         except Exception as e:
-            self.update_terminal(f"Error establishing connection: {e}")
+            self.update_terminal(f"Error establishing connection: BBBBB {e}")
             messagebox.showerror("Connection Error", f"Error establishing connection: {e}")
 
     def update_terminal(self, message):
