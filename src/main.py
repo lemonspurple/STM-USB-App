@@ -1,8 +1,10 @@
-from tkinter import Tk, Frame, Button, Text, Scrollbar, END, Toplevel, messagebox
+from tkinter import Tk, Frame, Button, Text, Scrollbar, END, Toplevel, messagebox, Menu, Listbox, SINGLE
 import usb_connection
 import measure
 from adjust import AdjustApp
 import threading
+import serial.tools.list_ports
+import settings
 
 # Define the global STATUS variable
 STATUS = 'INIT'
@@ -12,6 +14,19 @@ class EspApiClient:
         self.master = master
         self.master.title("500 EUR RTM - Connecting ...")
         self.master.geometry("800x600")
+
+        # Create a menu bar
+        self.menu_bar = Menu(self.master)
+        self.master.config(menu=self.menu_bar)
+
+        # Create a File menu
+        self.file_menu = Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Measure", command=self.open_measure)
+        self.file_menu.add_command(label="Adjust", command=self.open_adjust)
+        self.file_menu.add_command(label="Settings", command=self.open_settings)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.on_closing)
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -27,7 +42,7 @@ class EspApiClient:
         self.terminal['yscrollcommand'] = self.scrollbar.set
 
         # Create a button to establish USB connection
-        self.connect_button = Button(self.master, text="Connect", command=self.connect)
+        self.connect_button = Button(self.master, text="Connect", command=self.select_port)
         self.connect_button.pack()
 
         # Create a button to open the MEASURE interface, initially hidden
@@ -48,9 +63,55 @@ class EspApiClient:
         # Attempt to establish a USB connection
         self.connect()
 
+    def select_port(self):
+        self.port_dialog = Toplevel(self.master)
+        self.port_dialog.title("Select Port")
+
+        # Center the dialog on the screen
+        self.port_dialog.geometry("300x200+{}+{}".format(
+            int(self.master.winfo_screenwidth() / 2 - 150),
+            int(self.master.winfo_screenheight() / 2 - 100)
+        ))
+
+        self.port_listbox = Listbox(self.port_dialog, selectmode=SINGLE)
+        self.port_listbox.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.refresh_ports()
+
+        # Create a frame to hold the buttons
+        button_frame = Frame(self.port_dialog)
+        button_frame.pack(fill="x", padx=10, pady=10)
+
+        self.select_button = Button(
+            button_frame, text="Select", command=self.set_selected_port
+        )
+        self.select_button.pack(side="left", padx=10, pady=10)
+
+        self.refresh_button = Button(
+            button_frame, text="Refresh", command=self.refresh_ports
+        )
+        self.refresh_button.pack(side="right", padx=10, pady=10)
+
+    def refresh_ports(self):
+        self.port_listbox.delete(0, END)
+        ports = list(serial.tools.list_ports.comports())
+        for port in ports:
+            self.port_listbox.insert(END, port.device)
+
+    def set_selected_port(self):
+        selected_index = self.port_listbox.curselection()
+        if selected_index:
+            selected_port = self.port_listbox.get(selected_index)
+            settings.USB_PORT = selected_port
+            self.port_dialog.destroy()
+            self.connect()
+        else:
+            messagebox.showerror("Port Selection Error", "No port selected.")
+
     def connect(self):
         global STATUS
         try:
+            self.usb_conn.port = settings.USB_PORT
             if self.usb_conn.establish_connection():
                 # Update the window title with the COM port
                 self.master.title(f"500 EUR RTM - Connected to {self.usb_conn.port}")
@@ -62,11 +123,9 @@ class EspApiClient:
                 STATUS = "IDLE"
             else:
                 messagebox.showerror("Connection Error", "Failed to establish connection.")
-                
-                self.master.after(0, self.master.destroy)
         except Exception as e:
             self.update_terminal(f"Error establishing connection: {e}")
-            self.master.after(0, self.master.destroy)
+            messagebox.showerror("Connection Error", f"Error establishing connection: {e}")
 
     def update_terminal(self, message):
         # Update the terminal with a new message
@@ -106,6 +165,10 @@ class EspApiClient:
             widget.destroy()
         # Open the ADJUST interface in the app frame
         AdjustApp(self.app_frame)
+
+    def open_settings(self):
+        # Implement the settings window or dialog here
+        messagebox.showinfo("Settings", "Settings window not implemented yet.")
 
     def on_closing(self):
         # Stop receiving data
