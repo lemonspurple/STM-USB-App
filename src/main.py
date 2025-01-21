@@ -45,9 +45,7 @@ class EspApiClient:
         self.measure_menu.add_command(label="Open Measure", command=self.open_measure)
 
         # Create an Adjust menu
-        self.adjust_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Adjust", menu=self.adjust_menu)
-        self.adjust_menu.add_command(label="Open Adjust", command=self.open_adjust)
+        self.menu_bar.add_command(label="Adjust", command=self.open_adjust)
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -80,6 +78,9 @@ class EspApiClient:
         # Attempt to establish a USB connection
         if not self.connect():
             self.select_port()
+
+        # Initialize the AdjustApp instance
+        self.adjust_app = None
 
     def select_port(self):
         self.port_dialog = Toplevel(self.master)
@@ -160,18 +161,18 @@ class EspApiClient:
 
     def read_queue_loop(self):
         self.usb_conn.read_queue()
-        self.master.after(100, self.read_queue_loop)
+        self.master.after(10, self.read_queue_loop)
 
     def dispatch_data(self, message):
-        # Dispatch data to the appropriate GUI
-        if message.startswith("MEASURE"):
-            # Send data to the MEASURE interface
-            measure.MeasureWindow.update_data(message)
-        elif message.startswith("ADJUST"):
-            # Send data to the ADJUST interface
-            AdjustApp.update_data(message)
-        else:
-            self.update_terminal(message)
+        global STATUS
+        if STATUS == "ADJUST":
+            if self.adjust_app:
+                self.adjust_app.update_data(message)
+               
+
+        self.update_terminal(message)
+
+        return
 
     def open_measure(self):
         global STATUS
@@ -183,14 +184,16 @@ class EspApiClient:
         measure.MeasureApp(self.app_frame)
 
     def open_adjust(self):
-        self.measure_button.pack_forget()
         global STATUS
         STATUS = "ADJUST"
+        self.measure_button.pack_forget()
+        self.usb_conn.write_command('ADJUST')                
+
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the ADJUST interface in the app frame
-        AdjustApp(self.app_frame)
+        self.adjust_app = AdjustApp(self.app_frame)
 
     def open_settings(self):
         # Implement the settings window or dialog here

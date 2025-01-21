@@ -43,6 +43,17 @@ class USBConnection:
             self.esp_to_queue.start_esp_to_queue()
             self.start_read_queue()
 
+    def write_command(self, command):
+        if self.is_connected:
+            command += '\n'
+            try:
+                self.connection.write(command.encode())
+                self.update_terminal(f"Sent command: {command}")
+            except serial.SerialException as e:
+                self.update_terminal(f"Error sending command: {e}")
+        else:
+            self.update_terminal("Not connected to any device.")
+
     def start_read_queue(self):
         # Start a background thread to read the queue
         self.reading_thread = threading.Thread(target=self.read_queue_loop, daemon=True)
