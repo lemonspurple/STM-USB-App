@@ -28,8 +28,6 @@ class USBConnection:
             self.check_esp_idle_response()
             return True
         except serial.SerialException as e:
-            # Handle any errors that occur during connection establishment
-            # self.update_terminal(f"Error establishing connection AAAAA : {e}")
             self.is_connected = False
             return False
 
@@ -48,7 +46,7 @@ class USBConnection:
             command += '\n'
             try:
                 self.connection.write(command.encode())
-                self.update_terminal(f"Sent command: {command}")
+                # self.update_terminal(f"Sent command: {command}")
             except serial.SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
         else:

@@ -168,7 +168,6 @@ class EspApiClient:
         if STATUS == "ADJUST":
             if self.adjust_app:
                 self.adjust_app.update_data(message)
-               
 
         self.update_terminal(message)
 
@@ -193,7 +192,7 @@ class EspApiClient:
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the ADJUST interface in the app frame
-        self.adjust_app = AdjustApp(self.app_frame)
+        self.adjust_app = AdjustApp(self.app_frame, self.usb_conn.write_command)
 
     def open_settings(self):
         # Implement the settings window or dialog here
