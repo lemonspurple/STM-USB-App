@@ -11,6 +11,8 @@ from tkinter import (
     Listbox,
     SINGLE,
 )
+
+from tkinter import ttk
 import usb_connection
 import measure
 from adjust import AdjustApp
@@ -208,6 +210,10 @@ class EspApiClient:
 
 if __name__ == "__main__":
     root = Tk()
+    style = ttk.Style(root)
+    style.theme_use("default")  # Use a simple theme
+    style.configure("Thin.Horizontal.TProgressbar", thickness=10)  # Set the thickness
+    
     esp_api_client = EspApiClient(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
     root.mainloop()

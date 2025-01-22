@@ -11,7 +11,7 @@ class AdjustApp:
         # Create a LabelFrame for Voltage
         self.voltage_frame = LabelFrame(master, text="ADC Tunnel")
         self.voltage_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
+        self.voltage_frame.config(height=250)
         # Add a label inside the Voltage frame
         self.voltage_label = Label(self.voltage_frame, text="0", font=("Arial", 20))
         self.voltage_label.pack(pady=10)
@@ -25,15 +25,16 @@ class AdjustApp:
         # Add a Progressbar inside the Voltage frame
         self.voltage_progressbar = Progressbar(
             self.voltage_frame,
+            style = "Thin.Horizontal.TProgressbar",
             orient=VERTICAL,
             length=200,
             mode="determinate",
-            maximum=0xFFF,
+            maximum=0x7FFF,
         )
-        self.voltage_progressbar.pack(side="right", padx=10)
+        self.voltage_progressbar.pack(side="right", padx=10, pady=10)
 
         # Create a LabelFrame for Tip
-        self.tip_frame = LabelFrame(master, text="Tip")
+        self.tip_frame = LabelFrame(master, text="")
         self.tip_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Create LabelFrames for Tip X, Tip Y, Tip Z and place them from left to right
@@ -45,16 +46,6 @@ class AdjustApp:
 
         self.tip_z_frame = LabelFrame(self.tip_frame, text="Tip Z")
         self.tip_z_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
-
-        # Add labels inside the Tip X, Tip Y, Tip Z frames
-        self.tip_x_label = Label(self.tip_x_frame, text="Tip X Settings")
-        self.tip_x_label.pack(pady=5)
-
-        self.tip_y_label = Label(self.tip_y_frame, text="Tip Y Settings")
-        self.tip_y_label.pack(pady=5)
-
-        self.tip_z_label = Label(self.tip_z_frame, text="Tip Z Settings")
-        self.tip_z_label.pack(pady=5)
 
         # SLIDERS X Y Z
         slider_length = 200
@@ -133,8 +124,6 @@ class AdjustApp:
         except Exception as e:
             error_message = f"ERROR in set_tip_xxz {e}"
             messagebox.showerror("Error", error_message)
-            
-       
 
     def update_data(self, message):
         """Updates the Adjust interface with new data"""
@@ -152,4 +141,4 @@ class AdjustApp:
             self.digits_label.config(text=display_str)
 
             # Update voltage progress bar
-            self.voltage_progressbar['value'] = float(data[2])
+            self.voltage_progressbar['value'] = float(data[3])
