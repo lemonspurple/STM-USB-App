@@ -140,9 +140,6 @@ class AdjustApp:
     def update_data(self, message):
         """Updates the Adjust interface with new data"""
 
-        if not self.is_active:
-            return
-
         data = message.split(',')
         if data[0] == 'ADJUST':
             # Update voltage label

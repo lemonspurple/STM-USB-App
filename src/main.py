@@ -169,14 +169,10 @@ class EspApiClient:
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
 
-    def read_queue_loop(self):
-        self.usb_conn.read_queue()
-        self.master.after(10, self.read_queue_loop)
-
     def dispatch_data(self, message):
         global STATUS
         if STATUS == "ADJUST":
-            if self.adjust_app:
+            if self.adjust_app and self.adjust_app.is_active:
                 self.adjust_app.update_data(message)
         elif STATUS == "PARAMETER":
             if self.parameter_app:
@@ -233,7 +229,7 @@ class EspApiClient:
         self.create_main_interface()
 
     def create_main_interface(self):
-        
+
         global STATUS
         if STATUS == "ADJUST":
             if self.adjust_app:
