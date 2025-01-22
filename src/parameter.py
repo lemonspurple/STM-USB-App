@@ -1,44 +1,69 @@
-from tkinter import Frame, Label, Button, Entry, StringVar
+from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame
 
 class ParameterApp:
     def __init__(self, master, write_command):
         self.master = master
         self.write_command = write_command
 
+        # Initialize the parameter dictionary
+        self.parameter = {}
+
         # Create a frame for the ParameterApp
-        self.frame = Frame(master)
-        self.frame.pack(fill="both", expand=True, padx=10, pady=10)
+        self.frame_parameter = Frame(master)
+        self.frame_parameter.grid(column=1, row=1, padx=1, pady=1)
 
-        # Add a label for the parameter
-        self.parameter_label = Label(self.frame, text="Parameter:")
-        self.parameter_label.pack(pady=5)
+        # Create a LabelFrame for editing parameters
+        self.frame_edit = LabelFrame(master, text="Parameters")
+        self.frame_edit.grid(column=0, row=1, padx=1, pady=1)
 
-        # Add an entry widget for the parameter
-        self.parameter_var = StringVar()
-        self.parameter_entry = Entry(self.frame, textvariable=self.parameter_var)
-        self.parameter_entry.pack(pady=5)
+        # Add labels and entry fields for parameters
+        self.parameter_labels_entries = []
+        self.parameter_vars = {}
+        parameter_keys = [
+            "kI", "kD", "targetTunnelCurrentnA", "toleranceTunnelCurrentnA",
+            "startX", "startY", "measureMs", "direction", "maxX", "maxY", "MultiplicatorGridAdc"
+        ]
+        for i, key in enumerate(parameter_keys):
+            parameter_label = Label(self.frame_edit, text=f"{key}:")
+            parameter_var = StringVar()
+            parameter_entry = Entry(self.frame_edit, textvariable=parameter_var)
+            self.parameter_labels_entries.append((parameter_label, parameter_entry))
+            self.parameter_vars[key] = parameter_var
 
-        # Add a button to send the parameter
-        self.send_button = Button(self.frame, text="Send", command=self.send_parameter)
-        self.send_button.pack(pady=5)
+        # Grid the labels and entry fields for parameters
+        for i, (label, entry) in enumerate(self.parameter_labels_entries):
+            label.grid(column=0, row=i, padx=1, pady=1)
+            entry.grid(column=1, row=i, padx=1, pady=1)
 
-        # Add a status label
-        self.status_label = Label(self.frame, text="Status: Waiting for input...")
-        self.status_label.pack(pady=5)
+        # Add Apply and Default buttons
+        self.btn_apply_parameter_setting = Button(self.frame_parameter, text="Apply", command=self.apply_parameters)
+        self.btn_apply_parameter_setting.grid(column=0, row=2, padx=1, pady=1, sticky=W)
 
-    def send_parameter(self):
-        parameter = self.parameter_var.get()
-        sendstring = f"PARAMETER,{parameter}\n"
+        self.btn_set_parameter_default = Button(self.frame_parameter, text="Default", command=self.set_default_parameters)
+        self.btn_set_parameter_default.grid(column=0, row=2, padx=1, pady=1, sticky=E)
+
+       
+
+    def apply_parameters(self):
+        parameters = [entry.get() for _, entry in self.parameter_labels_entries]
+        sendstring = f"PARAMETER,{','.join(parameters)}\n"
         try:
             self.write_command(sendstring)
-            self.status_label.config(text="Status: Parameter sent!")
+           
         except Exception as e:
-            error_message = f"ERROR in send_parameter {e}"
-            self.status_label.config(text=error_message)
+            error_message = f"ERROR in apply_parameters {e}"
+            
+    def set_default_parameters(self):
+        pass
+        # Logic to set default parameters
 
     def update_data(self, message):
         """Updates the Parameter interface with new data"""
         data = message.split(',')
         if data[0] == 'PARAMETER':
+            key = data[1]
+            value = data[2]
+            self.parameter[key] = value
+            if key in self.parameter_vars:
+                self.parameter_vars[key].set(value)
             # Update the status label with the received data
-            self.status_label.config(text=f"Received: {data[1]}")

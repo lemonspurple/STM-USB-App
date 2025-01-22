@@ -178,7 +178,7 @@ class EspApiClient:
             if self.adjust_app:
                 self.adjust_app.update_data(message)
         elif STATUS == "PARAMETER":
-            if self.parameter_app_app:
+            if self.parameter_app:
                 self.parameter_app.update_data(message)
 
         self.update_terminal(message)
@@ -210,7 +210,7 @@ class EspApiClient:
         global STATUS
         STATUS = "PARAMETER"
         self.measure_button.pack_forget()
-        self.usb_conn.write_command("PARAMETER")
+        self.usb_conn.write_command("PARAMETER,?") 
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
