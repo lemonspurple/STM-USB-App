@@ -32,7 +32,7 @@ class ParameterApp:
 
         # Grid the labels and entry fields for parameters
         for i, (label, entry) in enumerate(self.parameter_labels_entries):
-            label.grid(column=0, row=i, padx=1, pady=1)
+            label.grid(column=0, row=i, padx=1, pady=1, sticky=W)
             entry.grid(column=1, row=i, padx=1, pady=1)
 
         # Add Apply and Default buttons
@@ -42,20 +42,18 @@ class ParameterApp:
         self.btn_set_parameter_default = Button(self.frame_parameter, text="Default", command=self.set_default_parameters)
         self.btn_set_parameter_default.grid(column=0, row=2, padx=1, pady=1, sticky=E)
 
-       
-
     def apply_parameters(self):
         parameters = [entry.get() for _, entry in self.parameter_labels_entries]
         sendstring = f"PARAMETER,{','.join(parameters)}\n"
         try:
             self.write_command(sendstring)
-           
         except Exception as e:
             error_message = f"ERROR in apply_parameters {e}"
-            
+            print(error_message)
+
     def set_default_parameters(self):
-        pass
         # Logic to set default parameters
+        pass
 
     def update_data(self, message):
         """Updates the Parameter interface with new data"""
@@ -66,4 +64,3 @@ class ParameterApp:
             self.parameter[key] = value
             if key in self.parameter_vars:
                 self.parameter_vars[key].set(value)
-            # Update the status label with the received data
