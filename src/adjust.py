@@ -15,6 +15,7 @@ class AdjustApp:
         self.voltage_frame = LabelFrame(master, text="ADC Tunnel")
         self.voltage_frame.pack(fill="both", expand=True, padx=10, pady=10)
         self.voltage_frame.config(height=250)
+
         # Add a label inside the Voltage frame
         self.voltage_label = Label(self.voltage_frame, text="0", font=("Arial", 20))
         self.voltage_label.pack(pady=10)
@@ -28,7 +29,7 @@ class AdjustApp:
         # Add a Progressbar inside the Voltage frame
         self.voltage_progressbar = Progressbar(
             self.voltage_frame,
-            style = "Thin.Horizontal.TProgressbar",
+            style="Thin.Horizontal.TProgressbar",
             orient=VERTICAL,
             length=200,
             mode="determinate",
@@ -114,6 +115,7 @@ class AdjustApp:
             self.tip_z_frame, text=self.slider_z.get(), width=10, font=("Arial", 15)
         )
         self.lb_z.pack(pady=5)
+
         # Add Back button to return to the main interface
         self.btn_back = Button(
             self.tip_frame, text="Back", command=self.wrapper_return_to_main
@@ -161,4 +163,3 @@ class AdjustApp:
         self.is_active = False
         self.voltage_frame.destroy()
         self.tip_frame.destroy()
- 
