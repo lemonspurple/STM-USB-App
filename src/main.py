@@ -49,7 +49,7 @@ class EspApiClient:
 
         # Create an Adjust menu
         self.menu_bar.add_command(label="Adjust", command=self.open_adjust)
-        
+
         # Create a Parameter menu
         self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
 
@@ -78,7 +78,8 @@ class EspApiClient:
 
         # Initialize the USB connection handler
         self.usb_conn = usb_connection.USBConnection(
-            self.update_terminal, self.dispatch_data
+            update_terminal_callback=self.update_terminal,
+            dispatcher_callback=self.dispatch_data,
         )
 
         # Attempt to establish a USB connection
@@ -198,25 +199,49 @@ class EspApiClient:
         global STATUS
         STATUS = "ADJUST"
         self.measure_button.pack_forget()
-        self.usb_conn.write_command('ADJUST')                
+        self.usb_conn.write_command("ADJUST")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the ADJUST interface in the app frame
-        self.adjust_app = AdjustApp(self.app_frame, self.usb_conn.write_command)
+        self.adjust_app = AdjustApp(
+            master=self.app_frame,
+            write_command=self.usb_conn.write_command,
+            return_to_main=self.return_to_main
+        )
 
     def open_parameter(self):
         global STATUS
         STATUS = "PARAMETER"
         self.measure_button.pack_forget()
-        self.usb_conn.write_command("PARAMETER,?") 
+        self.usb_conn.write_command("PARAMETER,?")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the PARAMETER interface in the app frame
-        self.parameter_app = ParameterApp(self.app_frame, self.usb_conn.write_command)
+        self.parameter_app = ParameterApp(
+            self.app_frame, self.usb_conn.write_command, self.return_to_main
+        )
+
+    def return_to_main(self):
+        # Clear the app frame
+        for widget in self.app_frame.winfo_children():
+            widget.destroy()
+        # Recreate the main interface (if needed)
+        self.create_main_interface()
+
+    def create_main_interface(self):
+        
+        global STATUS
+        if STATUS == "ADJUST":
+            if self.adjust_app:
+                self.adjust_app.destroy()
+                self.adjust_app = None
+            print("send chr3 to reset")
+            self.usb_conn.esp_restart()
+        # Logic to recreate the main interface
 
     def open_settings(self):
         # Implement the settings window or dialog here
@@ -235,7 +260,7 @@ if __name__ == "__main__":
     style = ttk.Style(root)
     style.theme_use("default")  # Use a simple theme
     style.configure("Thin.Horizontal.TProgressbar", thickness=10)  # Set the thickness
-    
+
     esp_api_client = EspApiClient(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
     root.mainloop()

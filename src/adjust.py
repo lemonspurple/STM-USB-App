@@ -4,9 +4,12 @@ import time
 
 
 class AdjustApp:
-    def __init__(self, master, write_command):
+
+    def __init__(self, master, write_command, return_to_main):
         self.master = master
         self.write_command = write_command
+        self.return_to_main = return_to_main
+        self.is_active = True
 
         # Create a LabelFrame for Voltage
         self.voltage_frame = LabelFrame(master, text="ADC Tunnel")
@@ -111,6 +114,15 @@ class AdjustApp:
             self.tip_z_frame, text=self.slider_z.get(), width=10, font=("Arial", 15)
         )
         self.lb_z.pack(pady=5)
+        # Add Back button to return to the main interface
+        self.btn_back = Button(
+            self.tip_frame, text="Back", command=self.wrapper_return_to_main
+        )
+        self.btn_back.pack(pady=10)
+
+    def wrapper_return_to_main(self):
+        self.is_active = False
+        self.return_to_main()
 
     def on_slider_xyz_button_release(self, event):
         """Handles slider button release to update tip positions"""
@@ -127,6 +139,10 @@ class AdjustApp:
 
     def update_data(self, message):
         """Updates the Adjust interface with new data"""
+
+        if not self.is_active:
+            return
+
         data = message.split(',')
         if data[0] == 'ADJUST':
             # Update voltage label
@@ -142,3 +158,10 @@ class AdjustApp:
 
             # Update voltage progress bar
             self.voltage_progressbar['value'] = float(data[3])
+
+    def destroy(self):
+        """Destroys all widgets created by AdjustApp"""
+        self.is_active = False
+        self.voltage_frame.destroy()
+        self.tip_frame.destroy()
+ 

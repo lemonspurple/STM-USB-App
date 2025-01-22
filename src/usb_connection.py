@@ -31,6 +31,11 @@ class USBConnection:
             self.is_connected = False
             return False
 
+    def esp_restart(self):
+        self.waiting_for_idle = True
+        self.connection.write(chr(3).encode())
+        
+
     def check_esp_idle_response(self):
         if self.is_connected:
 
@@ -59,6 +64,7 @@ class USBConnection:
         self.reading_thread.start() 
 
     def read_queue_loop(self):
+        global STATUS
         while self.running:
             while not self.data_queue.empty():
                 message = self.data_queue.get()

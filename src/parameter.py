@@ -1,9 +1,10 @@
 from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame
 
 class ParameterApp:
-    def __init__(self, master, write_command):
+    def __init__(self, master, write_command, return_to_main):
         self.master = master
         self.write_command = write_command
+        self.return_to_main = return_to_main
 
         # Initialize the parameter dictionary
         self.parameter = {}
@@ -42,6 +43,12 @@ class ParameterApp:
         self.btn_set_parameter_default = Button(self.frame_parameter, text="Default", command=self.set_default_parameters)
         self.btn_set_parameter_default.grid(column=0, row=2, padx=1, pady=1, sticky=E)
 
+        # Add Back button to return to the main interface
+        self.btn_back = Button(
+            self.frame_parameter, text="Back", command=self.return_to_main
+        )
+        self.btn_back.grid(column=0, row=3, padx=1, pady=1, sticky=W)
+
     def apply_parameters(self):
         parameters = [entry.get() for _, entry in self.parameter_labels_entries]
         sendstring = f"PARAMETER,{','.join(parameters)}\n"
@@ -52,8 +59,12 @@ class ParameterApp:
             print(error_message)
 
     def set_default_parameters(self):
-        # Logic to set default parameters
-        pass
+        sendstring = "PARAMETER,DEFAULT\n"
+        try:
+            self.write_command(sendstring)
+        except Exception as e:
+            error_message = f"ERROR in set_default_parameters {e}"
+            print(error_message)
 
     def update_data(self, message):
         """Updates the Parameter interface with new data"""
