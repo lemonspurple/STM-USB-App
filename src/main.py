@@ -16,6 +16,7 @@ from tkinter import ttk
 import usb_connection
 import measure
 from adjust import AdjustApp
+from parameter import ParameterApp
 import threading
 import serial.tools.list_ports
 import settings
@@ -48,6 +49,9 @@ class EspApiClient:
 
         # Create an Adjust menu
         self.menu_bar.add_command(label="Adjust", command=self.open_adjust)
+        
+        # Create a Parameter menu
+        self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -83,6 +87,9 @@ class EspApiClient:
 
         # Initialize the AdjustApp instance
         self.adjust_app = None
+
+        # Initialize the ParameterApp instance
+        self.parameter_app = None
 
     def select_port(self):
         self.port_dialog = Toplevel(self.master)
@@ -170,6 +177,9 @@ class EspApiClient:
         if STATUS == "ADJUST":
             if self.adjust_app:
                 self.adjust_app.update_data(message)
+        elif STATUS == "PARAMETER":
+            if self.parameter_app_app:
+                self.parameter_app.update_data(message)
 
         self.update_terminal(message)
 
@@ -195,6 +205,18 @@ class EspApiClient:
             widget.destroy()
         # Open the ADJUST interface in the app frame
         self.adjust_app = AdjustApp(self.app_frame, self.usb_conn.write_command)
+
+    def open_parameter(self):
+        global STATUS
+        STATUS = "PARAMETER"
+        self.measure_button.pack_forget()
+        self.usb_conn.write_command("PARAMETER")
+
+        # Clear the app frame
+        for widget in self.app_frame.winfo_children():
+            widget.destroy()
+        # Open the PARAMETER interface in the app frame
+        self.parameter_app = ParameterApp(self.app_frame, self.usb_conn.write_command)
 
     def open_settings(self):
         # Implement the settings window or dialog here
