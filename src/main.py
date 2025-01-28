@@ -31,6 +31,25 @@ class EspApiClient:
         self.master.title("500 EUR RTM - Connecting ...")
         self.master.geometry("800x600")
 
+        self.setup_interface()
+
+        # Initialize the USB connection handler
+        self.usb_conn = usb_connection.USBConnection(
+            update_terminal_callback=self.update_terminal,
+            dispatcher_callback=self.dispatch_data,
+        )
+
+        # Attempt to establish a USB connection
+        if not self.connect():
+            self.select_port()
+
+        # Initialize the AdjustApp instance
+        self.adjust_app = None
+
+        # Initialize the ParameterApp instance
+        self.parameter_app = None
+
+    def setup_interface(self):
         # Create a menu bar
         self.menu_bar = Menu(self.master)
         self.master.config(menu=self.menu_bar)
@@ -75,22 +94,6 @@ class EspApiClient:
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
         self.app_frame.pack(side="right", fill="both", expand=True)
-
-        # Initialize the USB connection handler
-        self.usb_conn = usb_connection.USBConnection(
-            update_terminal_callback=self.update_terminal,
-            dispatcher_callback=self.dispatch_data,
-        )
-
-        # Attempt to establish a USB connection
-        if not self.connect():
-            self.select_port()
-
-        # Initialize the AdjustApp instance
-        self.adjust_app = None
-
-        # Initialize the ParameterApp instance
-        self.parameter_app = None
 
     def select_port(self):
         self.port_dialog = Toplevel(self.master)
@@ -165,7 +168,7 @@ class EspApiClient:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
-        if self.terminal:
+        if self.terminal and self.terminal.winfo_exists():
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
 
@@ -175,6 +178,7 @@ class EspApiClient:
             if self.adjust_app and self.adjust_app.is_active:
                 self.adjust_app.update_data(message)
         elif STATUS == "PARAMETER":
+            print(f"AAA {STATUS} {message}")
             if self.parameter_app:
                 self.parameter_app.update_data(message)
 
@@ -222,22 +226,20 @@ class EspApiClient:
         )
 
     def return_to_main(self):
+        global STATUS
+        STATUS = "IDLE"
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
-        # Recreate the main interface (if needed)
+        # Recreate the main interface
         self.create_main_interface()
 
     def create_main_interface(self):
-
-        global STATUS
-        if STATUS == "ADJUST":
-            if self.adjust_app:
-                self.adjust_app.destroy()
-                self.adjust_app = None
-            print("send chr3 to reset")
-            self.usb_conn.esp_restart()
-        # Logic to recreate the main interface
+        # Clear the existing interface
+        for widget in self.master.winfo_children():
+            widget.destroy()
+        # Re-setup the interface without reinitializing the COM port
+        self.setup_interface()
 
     def open_settings(self):
         # Implement the settings window or dialog here

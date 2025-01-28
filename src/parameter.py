@@ -54,6 +54,7 @@ class ParameterApp:
         sendstring = f"PARAMETER,{','.join(parameters)}\n"
         try:
             self.write_command(sendstring)
+            self.return_to_main()
         except Exception as e:
             error_message = f"ERROR in apply_parameters {e}"
             print(error_message)
@@ -62,6 +63,7 @@ class ParameterApp:
         sendstring = "PARAMETER,DEFAULT\n"
         try:
             self.write_command(sendstring)
+            self.return_to_main()
         except Exception as e:
             error_message = f"ERROR in set_default_parameters {e}"
             print(error_message)

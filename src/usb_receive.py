@@ -21,5 +21,7 @@ class USBReceive:
                 if response:
                     self.data_queue.put(response)
             except Exception as e:
-                print(f"Error in esp_to_queue_loop: {e}")
+                print(f"Error in esp_to_queue: {e}")
                 self.running = False
+                # Optionally, re-raise the exception to see the full traceback
+                raise
