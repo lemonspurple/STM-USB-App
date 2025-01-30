@@ -48,7 +48,13 @@ class ParameterApp:
             self.frame_parameter, text="Back", command=self.return_to_main
         )
         self.btn_back.grid(column=0, row=3, padx=1, pady=1, sticky=W)
+        
+        self.send_parameter_to_esp()
 
+    def send_parameter_to_esp(self):
+        self.write_command("PARAMETER,?")
+    
+    
     def apply_parameters(self):
         parameters = [entry.get() for _, entry in self.parameter_labels_entries]
         sendstring = f"PARAMETER,{','.join(parameters)}\n"

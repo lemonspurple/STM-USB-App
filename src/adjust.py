@@ -121,6 +121,13 @@ class AdjustApp:
             self.tip_frame, text="Back", command=self.wrapper_return_to_main
         )
         self.btn_back.pack(pady=10)
+        
+        self.send_adjust_to_esp()
+        
+        
+    def send_adjust_to_esp(self):
+        self.write_command("ADJUST")
+        
 
     def wrapper_return_to_main(self):
         self.is_active = False

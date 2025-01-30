@@ -31,7 +31,7 @@ class EspApiClient:
         self.master.title("500 EUR RTM - Connecting ...")
         self.master.geometry("800x600")
 
-        self.setup_interface()
+        self.setup_gui_interface()
 
         # Initialize the USB connection handler
         self.usb_conn = usb_connection.USBConnection(
@@ -49,7 +49,7 @@ class EspApiClient:
         # Initialize the ParameterApp instance
         self.parameter_app = None
 
-    def setup_interface(self):
+    def setup_gui_interface(self):
         # Create a menu bar
         self.menu_bar = Menu(self.master)
         self.master.config(menu=self.menu_bar)
@@ -151,6 +151,7 @@ class EspApiClient:
         try:
             self.usb_conn.port = settings.USB_PORT
             if self.usb_conn.establish_connection():
+                self.usb_conn.check_esp_idle_response()
                 # Update the window title with the COM port
                 self.master.title(f"500 EUR RTM - Connected to {self.usb_conn.port}")
                 # Show the MEASURE and ADJUST buttons
@@ -199,7 +200,7 @@ class EspApiClient:
         global STATUS
         STATUS = "ADJUST"
         self.measure_button.pack_forget()
-        self.usb_conn.write_command("ADJUST")
+        #self.usb_conn.write_command("ADJUST")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
@@ -215,7 +216,7 @@ class EspApiClient:
         global STATUS
         STATUS = "PARAMETER"
         self.measure_button.pack_forget()
-        self.usb_conn.write_command("PARAMETER,?")
+        # self.usb_conn.write_command("PARAMETER,?")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
@@ -227,9 +228,6 @@ class EspApiClient:
 
     def return_to_main(self):
         self.usb_conn.write_command("STOP")
-        
-        global STATUS
-        STATUS = "IDLE"
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
@@ -241,7 +239,7 @@ class EspApiClient:
         for widget in self.master.winfo_children():
             widget.destroy()
         # Re-setup the interface without reinitializing the COM port
-        self.setup_interface()
+        self.setup_gui_interface()
 
     def open_settings(self):
         # Implement the settings window or dialog here
