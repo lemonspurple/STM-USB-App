@@ -226,6 +226,8 @@ class EspApiClient:
         )
 
     def return_to_main(self):
+        self.usb_conn.write_command("STOP")
+        
         global STATUS
         STATUS = "IDLE"
         # Clear the app frame

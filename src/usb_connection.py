@@ -51,7 +51,7 @@ class USBConnection:
             command += '\n'
             try:
                 self.connection.write(command.encode())
-                # self.update_terminal(f"Sent command: {command}")
+                self.update_terminal(f"To STM: {command}")
             except serial.SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
         else:
