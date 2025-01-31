@@ -11,13 +11,11 @@ from tkinter import (
     Listbox,
     SINGLE,
 )
-
 from tkinter import ttk
 import usb_connection
 import measure
 from adjust import AdjustApp
 from parameter import ParameterApp
-import threading
 import serial.tools.list_ports
 import settings
 
@@ -96,6 +94,7 @@ class EspApiClient:
         self.app_frame.pack(side="right", fill="both", expand=True)
 
     def select_port(self):
+        # Create a dialog to select the COM port
         self.port_dialog = Toplevel(self.master)
         self.port_dialog.title("Select Port")
 
@@ -131,12 +130,14 @@ class EspApiClient:
         self.master.wait_window(self.port_dialog)
 
     def refresh_ports(self):
+        # Refresh the list of available COM ports
         self.port_listbox.delete(0, END)
         ports = list(serial.tools.list_ports.comports())
         for port in ports:
             self.port_listbox.insert(END, port.device)
 
     def set_selected_port(self):
+        # Set the selected COM port
         selected_index = self.port_listbox.curselection()
         if selected_index:
             selected_port = self.port_listbox.get(selected_index)
@@ -147,6 +148,7 @@ class EspApiClient:
             messagebox.showerror("Port Selection Error", "No port selected.")
 
     def connect(self):
+        # Establish a connection to the selected COM port
         global STATUS
         try:
             self.usb_conn.port = settings.USB_PORT
@@ -174,20 +176,19 @@ class EspApiClient:
             self.terminal.see(END)
 
     def dispatch_received_data(self, message):
+        # Dispatch received data based on the current status
         global STATUS
         if STATUS == "ADJUST":
             if self.adjust_app and self.adjust_app.is_active:
                 self.adjust_app.update_data(message)
         elif STATUS == "PARAMETER":
-            print(f"{message}")
             if self.parameter_app:
                 self.parameter_app.update_data(message)
 
         self.update_terminal(message)
 
-        return
-
     def open_measure(self):
+        # Open the MEASURE interface
         global STATUS
         STATUS = "MEASURE"
         # Clear the app frame
@@ -197,10 +198,11 @@ class EspApiClient:
         measure.MeasureApp(self.app_frame)
 
     def open_adjust(self):
+        # Open the ADJUST interface
         global STATUS
         STATUS = "ADJUST"
         self.measure_button.pack_forget()
-        #self.usb_conn.write_command("ADJUST")
+        # self.usb_conn.write_command("ADJUST")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
@@ -213,6 +215,7 @@ class EspApiClient:
         )
 
     def open_parameter(self):
+        # Open the PARAMETER interface
         global STATUS
         STATUS = "PARAMETER"
         self.measure_button.pack_forget()
@@ -225,8 +228,10 @@ class EspApiClient:
         self.parameter_app = ParameterApp(
             self.app_frame, self.usb_conn.write_command, self.return_to_main
         )
+        self.parameter_app.request_parameter()
 
     def return_to_main(self):
+        # Return to the main interface
         self.usb_conn.write_command("STOP")
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
@@ -246,10 +251,9 @@ class EspApiClient:
         messagebox.showinfo("Settings", "Settings window not implemented yet.")
 
     def on_closing(self):
-        # Stop receiving data
+        # Stop receiving data and close the application
         if self.usb_conn.esp_to_queue:
             self.usb_conn.esp_to_queue.stop_esp_to_queue()
-        # Close the application
         self.master.destroy()
 
 

@@ -1,3 +1,4 @@
+import time
 from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame
 
 class ParameterApp:
@@ -5,8 +6,7 @@ class ParameterApp:
         self.master = master
         self.write_command = write_command
         self.return_to_main = return_to_main
-        
-        self.request_parameter()
+
         # Initialize the parameter dictionary
         self.parameter = {}
 
@@ -22,7 +22,7 @@ class ParameterApp:
         self.parameter_labels_entries = []
         self.parameter_vars = {}
         parameter_keys = [
-            "kP","kI", "kD", "targetNa", "toleranceNa",
+            "kP", "kI", "kD", "targetNa", "toleranceNa",
             "startX", "startY", "measureMs", "direction", "maxX", "maxY", "multiplicator"
         ]
         for i, key in enumerate(parameter_keys):
@@ -45,9 +45,7 @@ class ParameterApp:
         self.btn_set_parameter_default.grid(column=0, row=2, padx=1, pady=1, sticky=E)
 
         # Add Back button to return to the main interface
-        self.btn_back = Button(
-            self.frame_parameter, text="Back", command=self.return_to_main
-        )
+        self.btn_back = Button(self.frame_parameter, text="Back", command=self.return_to_main)
         self.btn_back.grid(column=0, row=3, padx=1, pady=1, sticky=W)
 
     def request_parameter(self):
@@ -64,10 +62,10 @@ class ParameterApp:
             print(error_message)
 
     def set_default_parameters(self):
-        sendstring = "PARAMETER,DEFAULT\n"
         try:
-            self.write_command(sendstring)
-            self.return_to_main()
+            self.write_command("PARAMETER,DEFAULT\n")
+            self.write_command("PARAMETER,?\n")
+
         except Exception as e:
             error_message = f"ERROR in set_default_parameters {e}"
             print(error_message)
@@ -79,6 +77,4 @@ class ParameterApp:
             key = data[1]
             value = data[2]
             self.parameter[key] = value
-            
-            if key in self.parameter_vars:
-                self.parameter_vars[key].set(value)
+            self.parameter_vars[key].set(value)
