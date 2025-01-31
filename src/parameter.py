@@ -5,7 +5,8 @@ class ParameterApp:
         self.master = master
         self.write_command = write_command
         self.return_to_main = return_to_main
-
+        
+        self.request_parameter()
         # Initialize the parameter dictionary
         self.parameter = {}
 
@@ -21,8 +22,8 @@ class ParameterApp:
         self.parameter_labels_entries = []
         self.parameter_vars = {}
         parameter_keys = [
-            "kI", "kD", "targetTunnelCurrentnA", "toleranceTunnelCurrentnA",
-            "startX", "startY", "measureMs", "direction", "maxX", "maxY", "MultiplicatorGridAdc"
+            "kP","kI", "kD", "targetNa", "toleranceNa",
+            "startX", "startY", "measureMs", "direction", "maxX", "maxY", "multiplicator"
         ]
         for i, key in enumerate(parameter_keys):
             parameter_label = Label(self.frame_edit, text=f"{key}:")
@@ -48,13 +49,10 @@ class ParameterApp:
             self.frame_parameter, text="Back", command=self.return_to_main
         )
         self.btn_back.grid(column=0, row=3, padx=1, pady=1, sticky=W)
-        
-        self.send_parameter_to_esp()
 
-    def send_parameter_to_esp(self):
+    def request_parameter(self):
         self.write_command("PARAMETER,?")
-    
-    
+
     def apply_parameters(self):
         parameters = [entry.get() for _, entry in self.parameter_labels_entries]
         sendstring = f"PARAMETER,{','.join(parameters)}\n"
@@ -81,5 +79,6 @@ class ParameterApp:
             key = data[1]
             value = data[2]
             self.parameter[key] = value
+            
             if key in self.parameter_vars:
                 self.parameter_vars[key].set(value)

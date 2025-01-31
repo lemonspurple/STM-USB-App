@@ -82,6 +82,9 @@ class USBConnection:
                 if self.waiting_for_idle and message == "IDLE":
                     self.connection_established = True
                     self.waiting_for_idle = False
+                    
+                    
+                    
                 self.dispatcher_callback(message)
 
     def stop_read_queue(self):

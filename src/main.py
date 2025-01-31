@@ -36,7 +36,7 @@ class EspApiClient:
         # Initialize the USB connection handler
         self.usb_conn = usb_connection.USBConnection(
             update_terminal_callback=self.update_terminal,
-            dispatcher_callback=self.dispatch_data,
+            dispatcher_callback=self.dispatch_received_data,
         )
 
         # Attempt to establish a USB connection
@@ -173,13 +173,13 @@ class EspApiClient:
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
 
-    def dispatch_data(self, message):
+    def dispatch_received_data(self, message):
         global STATUS
         if STATUS == "ADJUST":
             if self.adjust_app and self.adjust_app.is_active:
                 self.adjust_app.update_data(message)
         elif STATUS == "PARAMETER":
-            print(f"AAA {STATUS} {message}")
+            print(f"{message}")
             if self.parameter_app:
                 self.parameter_app.update_data(message)
 
