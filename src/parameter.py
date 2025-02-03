@@ -37,12 +37,12 @@ class ParameterApp:
             label.grid(column=0, row=i, padx=1, pady=1, sticky=W)
             entry.grid(column=1, row=i, padx=1, pady=1)
 
-        # Add Apply and Default buttons
+        # Add Apply, Default, and Back buttons
         self.btn_apply_parameter_setting = Button(self.frame_parameter, text="Apply", command=self.apply_parameters)
         self.btn_apply_parameter_setting.grid(column=0, row=2, padx=1, pady=1, sticky=W)
 
         self.btn_set_parameter_default = Button(self.frame_parameter, text="Default", command=self.set_default_parameters)
-        self.btn_set_parameter_default.grid(column=0, row=2, padx=1, pady=1, sticky=E)
+        self.btn_set_parameter_default.grid(column=1, row=2, padx=1, pady=1, sticky=E)
 
         # Add Back button to return to the main interface
         self.btn_back = Button(self.frame_parameter, text="Back", command=self.return_to_main)
@@ -53,18 +53,18 @@ class ParameterApp:
 
     def apply_parameters(self):
         parameters = [entry.get() for _, entry in self.parameter_labels_entries]
-        sendstring = f"PARAMETER,{','.join(parameters)}\n"
+        sendstring = f"PARAMETER,{','.join(parameters)}"
         try:
             self.write_command(sendstring)
-            self.return_to_main()
+            self.write_command("PARAMETER,?")
         except Exception as e:
             error_message = f"ERROR in apply_parameters {e}"
             print(error_message)
 
     def set_default_parameters(self):
         try:
-            self.write_command("PARAMETER,DEFAULT\n")
-            self.write_command("PARAMETER,?\n")
+            self.write_command("PARAMETER,DEFAULT")
+            self.write_command("PARAMETER,?")
 
         except Exception as e:
             error_message = f"ERROR in set_default_parameters {e}"
