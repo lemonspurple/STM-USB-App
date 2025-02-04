@@ -163,6 +163,7 @@ class EspApiClient:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
+  
         if self.terminal and self.terminal.winfo_exists():
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)

@@ -83,6 +83,7 @@ class USBConnection:
                     self.connection_established = True
                     self.waiting_for_idle = False
                 self.dispatcher_callback(message)
+                time.sleep(0.001)
 
     def stop_read_queue(self):
         # Stop the read queue loop
