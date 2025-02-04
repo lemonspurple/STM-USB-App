@@ -32,7 +32,6 @@ class MeasureApp:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
 
-
         # Start the measurement process
         self.send_measure_to_esp()
 
@@ -46,7 +45,7 @@ class MeasureApp:
         self.return_to_main()
 
     def update_data(self, message):
-        """Updates the Parameter interface with new data"""
+        # Update the Parameter interface with new data
         data = message.split(",")
 
         if len(data) == 4:
@@ -56,15 +55,14 @@ class MeasureApp:
             except ValueError:
                 pass
         elif data == ['DATA', 'DONE']:
-            # update rest of data
+            # Update rest of data
             self.redraw_plot()
-
             print("Measurement complete")
         else:
             print(data)
 
     def update_plot_data(self, x, y, z):
-        # Update the 3D plot with new data
+        # Append new data points
         self.x_data.append(x)
         self.y_data.append(y)
         self.z_data.append(z)
@@ -73,7 +71,6 @@ class MeasureApp:
         if self.last_y is None or y != self.last_y:
             self.last_y = y
             self.redraw_plot()
-           
 
     def redraw_plot(self):
         # Clear the plot and redraw
