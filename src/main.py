@@ -163,7 +163,7 @@ class EspApiClient:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
-  
+
         if self.terminal and self.terminal.winfo_exists():
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
@@ -171,18 +171,32 @@ class EspApiClient:
     def dispatch_received_data(self, message):
         # Dispatch received data based on the current status
         global STATUS
-        if STATUS == "ADJUST":
+        ms = message.split(",")
+        messagetype = ms[0]
+
+        if messagetype == "ADJUST":
             self.update_terminal(message)
             if self.adjust_app and self.adjust_app.is_active:
                 self.adjust_app.update_data(message)
-        elif STATUS == "PARAMETER":
+        elif messagetype == "PARAMETER":
             self.update_terminal(message)
             if self.parameter_app:
                 self.parameter_app.update_data(message)
-        elif STATUS == "MEASURE":
-            self.update_terminal(message)
-            if self.measure_app:
+        elif messagetype == "DATA":
+            try:
+                # Data done
+                if ms[1] == "DONE":
+                    self.update_terminal("Measurement complete.")
+                    self.return_to_main()
+                
                 self.measure_app.update_data(message)
+                   
+                # Plot next set of data
+                if ms[1]=="0":
+                    self.update_terminal(f"Processing Y={ms[2]}")
+
+            except Exception as e:
+                self.update_terminal(f"Error processing measure data: {message}, Error: {e}")
 
     def open_measure(self):
         # Open the MEASURE interface

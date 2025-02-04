@@ -66,7 +66,7 @@ class USBConnection:
         else:
             self.update_terminal("Not connected to any device.")
 
-    ############# Consume queue 
+    ############# Consume queue
     def start_read_queue(self):
         # Start a background thread to read the data queue
         self.reading_thread = threading.Thread(target=self.read_queue_loop, daemon=True)
@@ -76,20 +76,28 @@ class USBConnection:
     def read_queue_loop(self):
         # Loop to read messages from the data queue and dispatch them
         global STATUS
+        self.update_terminal("Foo start_read_queue")
+        buffer = ""
         while self.running:
             while not self.data_queue.empty():
-                message = self.data_queue.get()
-                if self.waiting_for_idle and message == "IDLE":
-                    self.connection_established = True
-                    self.waiting_for_idle = False
-                self.dispatcher_callback(message)
-                time.sleep(0.001)
+                buffer += self.data_queue.get() + "\n"  # Add newline to simulate complete lines
+                while '\n' in buffer:
+                    line, buffer = buffer.split('\n', 1)
+                    if line:
+                        if self.waiting_for_idle and line == "IDLE":
+                            self.connection_established = True
+                            self.waiting_for_idle = False
+                        self.dispatcher_callback(line)
+            time.sleep(0.001)
+                
+
+         
+        self.update_terminal("Foo stop_read_queue")
 
     def stop_read_queue(self):
         # Stop the read queue loop
         self.running = False
 
-    
     ################ ESP to queue block
     def start_esp_to_queue(self):
         # Start the ESP to queue thread
@@ -102,7 +110,7 @@ class USBConnection:
 
     def esp_to_queue_loop(self):
         # Loop to read responses from the ESP device and put them in the data queue
-        
+
         while self.receive_running:
             try:
                 response = self.connection.readline().decode().strip()
