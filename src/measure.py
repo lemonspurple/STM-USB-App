@@ -1,8 +1,10 @@
 from tkinter import Frame, Text, Button, END
 
 class MeasureApp:
-    def __init__(self, master):
+    def __init__(self, master, write_command, return_to_main):
         self.master = master
+        self.write_command = write_command
+        self.return_to_main = return_to_main
        
         
         self.frame = Frame(master)
@@ -17,6 +19,11 @@ class MeasureApp:
         self.quit_button = Button(self.frame, text="Quit", command=master.quit)
         self.quit_button.pack()
 
+    
+    def request_measure(self):
+        self.write_command("MEASURE")
+        
+        
     def start_measurement(self):
         # Logic to start measurement and display real-time data
         pass

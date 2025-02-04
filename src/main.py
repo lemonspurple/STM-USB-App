@@ -46,6 +46,8 @@ class EspApiClient:
 
         # Initialize the ParameterApp instance
         self.parameter_app = None
+        
+        self.measure_app = None
 
     def setup_gui_interface(self):
         # Create a menu bar
@@ -60,9 +62,11 @@ class EspApiClient:
         self.file_menu.add_command(label="Exit", command=self.on_closing)
 
         # Create a Measure menu
-        self.measure_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
-        self.measure_menu.add_command(label="Open Measure", command=self.open_measure)
+        self.menu_bar.add_command(label="Measure", command=self.open_measure)
+        
+        # self.measure_menu = Menu(self.menu_bar, tearoff=0)
+        # self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
+        # self.measure_menu.add_command(label="Open Measure", command=self.open_measure)
 
         # Create an Adjust menu
         self.menu_bar.add_command(label="Adjust", command=self.open_adjust)
@@ -85,7 +89,7 @@ class EspApiClient:
 
         # Create a button to open the MEASURE interface, initially hidden
         self.measure_button = Button(
-            self.master, text="MEASURE", command=self.open_measure
+            self.master, text="MEASURE_Foo", command=self.open_measure
         )
         self.measure_button.pack_forget()
 
@@ -184,7 +188,6 @@ class EspApiClient:
         elif STATUS == "PARAMETER":
             if self.parameter_app:
                 self.parameter_app.update_data(message)
-
         self.update_terminal(message)
 
     def open_measure(self):
@@ -195,7 +198,10 @@ class EspApiClient:
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the MEASURE interface in the app frame
-        measure.MeasureApp(self.app_frame)
+        self.measure_app=measure.MeasureApp(
+            master=self.app_frame,
+            write_command=self.usb_conn.write_command,
+            return_to_main=self.return_to_main)
 
     def open_adjust(self):
         # Open the ADJUST interface
