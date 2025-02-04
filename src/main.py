@@ -46,7 +46,7 @@ class EspApiClient:
 
         # Initialize the ParameterApp instance
         self.parameter_app = None
-        
+
         self.measure_app = None
 
     def setup_gui_interface(self):
@@ -63,10 +63,6 @@ class EspApiClient:
 
         # Create a Measure menu
         self.menu_bar.add_command(label="Measure", command=self.open_measure)
-        
-        # self.measure_menu = Menu(self.menu_bar, tearoff=0)
-        # self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
-        # self.measure_menu.add_command(label="Open Measure", command=self.open_measure)
 
         # Create an Adjust menu
         self.menu_bar.add_command(label="Adjust", command=self.open_adjust)
@@ -86,12 +82,6 @@ class EspApiClient:
         self.scrollbar = Scrollbar(self.terminal_frame, command=self.terminal.yview)
         self.scrollbar.pack(side="right", fill="y")
         self.terminal["yscrollcommand"] = self.scrollbar.set
-
-        # Create a button to open the MEASURE interface, initially hidden
-        self.measure_button = Button(
-            self.master, text="MEASURE_Foo", command=self.open_measure
-        )
-        self.measure_button.pack_forget()
 
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
@@ -160,8 +150,6 @@ class EspApiClient:
                 self.usb_conn.check_esp_idle_response()
                 # Update the window title with the COM port
                 self.master.title(f"500 EUR RTM - Connected to {self.usb_conn.port}")
-                # Show the MEASURE and ADJUST buttons
-                self.measure_button.pack()
 
                 STATUS = "IDLE"
                 return True
@@ -183,12 +171,17 @@ class EspApiClient:
         # Dispatch received data based on the current status
         global STATUS
         if STATUS == "ADJUST":
+            self.update_terminal(message)
             if self.adjust_app and self.adjust_app.is_active:
                 self.adjust_app.update_data(message)
         elif STATUS == "PARAMETER":
+            self.update_terminal(message)
             if self.parameter_app:
                 self.parameter_app.update_data(message)
-        self.update_terminal(message)
+        elif STATUS == "MEASURE":
+            self.update_terminal(message)
+            if self.measure_app:
+                self.measure_app.update_data(message)
 
     def open_measure(self):
         # Open the MEASURE interface
@@ -207,8 +200,6 @@ class EspApiClient:
         # Open the ADJUST interface
         global STATUS
         STATUS = "ADJUST"
-        self.measure_button.pack_forget()
-        # self.usb_conn.write_command("ADJUST")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
@@ -224,7 +215,6 @@ class EspApiClient:
         # Open the PARAMETER interface
         global STATUS
         STATUS = "PARAMETER"
-        self.measure_button.pack_forget()
         # self.usb_conn.write_command("PARAMETER,?")
 
         # Clear the app frame
