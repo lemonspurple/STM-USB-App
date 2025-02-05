@@ -45,7 +45,7 @@ class ParameterApp:
         self.btn_set_parameter_default.grid(column=1, row=2, padx=1, pady=1, sticky=E)
 
         # Add Back button to return to the main interface
-        self.btn_back = Button(self.frame_parameter, text="Back", command=self.return_to_main)
+        self.btn_back = Button(self.frame_parameter, text="Stop", command=self.return_to_main)
         self.btn_back.grid(column=0, row=3, padx=1, pady=1, sticky=W)
 
     def request_parameter(self):

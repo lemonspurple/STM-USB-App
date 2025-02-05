@@ -17,8 +17,13 @@ class MeasureApp:
         self.frame.pack()
 
         # Create a Back button to return to the main interface
-        self.btn_back = Button(self.frame, text="Back", command=self.wrapper_return_to_main)
+        self.btn_back = Button(self.frame, text="Stop", command=self.wrapper_return_to_main)
         self.btn_back.pack(pady=10)
+
+        # Create a Reset Rotation button to reset the 3D plot rotation
+        self.btn_reset_rotation = Button(self.frame, text="Reset Rotation", command=self.reset_rotation)
+        self.btn_reset_rotation.pack(pady=10)
+        self.btn_reset_rotation.pack_forget()  # Initially hide the Reset Rotation button
 
         # Initialize the 3D plot
         self.fig = plt.figure()
@@ -27,9 +32,14 @@ class MeasureApp:
         self.y_data = []
         self.z_data = []
 
+        # Store the initial rotation state
+        self.initial_elev = self.ax.elev
+        self.initial_azim = self.ax.azim
+
         # Embed the plot in a Tkinter canvas
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        self.canvas.mpl_connect('motion_notify_event', self.on_plot_hover)  # Connect the hover event
         self.redraw_plot()
 
         # Start the measurement process
@@ -49,12 +59,11 @@ class MeasureApp:
             print(f"Error: {e}, \n{message}")
             return False
 
-       
         self.x_data.append(x)
         self.y_data.append(y)
         self.z_data.append(z)
 
-        if x==0:
+        if x == 0:
             self.redraw_plot()
 
     def redraw_plot(self):
@@ -68,6 +77,17 @@ class MeasureApp:
         self.ax.set_ylabel('Y')  
         self.ax.set_zlabel('Z')
         self.canvas.draw()
+
+    def reset_rotation(self):
+        # Reset the rotation of the 3D plot to its initial state
+        self.ax.view_init(elev=self.initial_elev, azim=self.initial_azim)  # Reset to initial elevation and azimuthal angles
+        self.canvas.draw()
+        self.btn_reset_rotation.pack_forget()  # Hide the Reset Rotation button after resetting
+
+    def on_plot_hover(self, event):
+        # Show the Reset Rotation button only if the plot has been rotated
+        if self.ax.elev != self.initial_elev or self.ax.azim != self.initial_azim:
+            self.btn_reset_rotation.pack(pady=10)
 
     def animate(self, i):
         # Animation function to update the plot

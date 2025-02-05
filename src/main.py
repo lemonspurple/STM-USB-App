@@ -157,7 +157,9 @@ class EspApiClient:
             if self.usb_conn.establish_connection():
                 self.usb_conn.check_esp_idle_response()
                 # Update the window title with the COM port
-                self.master.title(f"500 EUR RTM - Connected to {self.usb_conn.port}")
+                self.master.title(
+                    f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
+                )
 
                 STATUS = "IDLE"
                 return True
@@ -202,7 +204,7 @@ class EspApiClient:
 
                 # Plot next set of data
                 if ms[1]=="0":
-                    self.update_terminal(f"Processing Y={ms[2]}")
+                    self.update_terminal(f"Processing Y {ms[2]}")
             except Exception as e:
                 self.update_terminal(f"Error measure: {message}, \nError: {e}")
 
