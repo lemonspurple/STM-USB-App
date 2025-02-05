@@ -64,6 +64,9 @@ class MeasureApp:
         self.ax.set_ylim(0, 200)
         self.ax.set_zlim(0, 0xFFFF)
         self.ax.plot(self.x_data, self.y_data, self.z_data)
+        self.ax.set_xlabel('X')  
+        self.ax.set_ylabel('Y')  
+        self.ax.set_zlabel('Z')
         self.canvas.draw()
 
     def animate(self, i):

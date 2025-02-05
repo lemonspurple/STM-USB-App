@@ -10,6 +10,7 @@ from tkinter import (
     Menu,
     Listbox,
     SINGLE,
+    PhotoImage
 )
 from tkinter import ttk
 import usb_connection
@@ -18,6 +19,7 @@ from adjust import AdjustApp
 from parameter import ParameterApp
 import serial.tools.list_ports
 import settings
+import os
 
 # Define the global STATUS variable
 STATUS = "INIT"
@@ -28,6 +30,12 @@ class EspApiClient:
         self.master = master
         self.master.title("500 EUR RTM - Connecting ...")
         self.master.geometry("800x600")
+
+        # Set the window icon
+        icon_path = os.path.join(
+            os.path.dirname(__file__), "../assets/icons/stm_symbol.ico"
+        )
+        self.master.iconbitmap(icon_path)
 
         self.setup_gui_interface()
 
