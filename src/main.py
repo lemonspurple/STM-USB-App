@@ -184,19 +184,19 @@ class EspApiClient:
                 self.parameter_app.update_data(message)
         elif messagetype == "DATA":
             try:
-                # Data done
-                if ms[1] == "DONE":
+                if len(ms) == 2 and ms[1] == "DONE":
+                    self.measure_app.redraw_plot()
                     self.update_terminal("Measurement complete.")
-                    self.return_to_main()
-                
-                self.measure_app.update_data(message)
-                   
+
+                # self.return_to_main()
+                if len(ms) == 4:
+                    self.measure_app.update_data(message)
+
                 # Plot next set of data
                 if ms[1]=="0":
                     self.update_terminal(f"Processing Y={ms[2]}")
-
             except Exception as e:
-                self.update_terminal(f"Error processing measure data: {message}, Error: {e}")
+                self.update_terminal(f"Error measure: {message}, \nError: {e}")
 
     def open_measure(self):
         # Open the MEASURE interface
@@ -242,8 +242,10 @@ class EspApiClient:
         self.parameter_app.request_parameter()
 
     def return_to_main(self):
-        # Return to the main interface
-        self.usb_conn.write_command("STOP")
+        # Restart esp
+        # self.usb_conn.esp_restart()
+
+        self.usb_conn.write_command("RESTART")
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()

@@ -45,7 +45,7 @@ class USBConnection:
     def esp_restart(self):
         # Send a restart command (Ctrl+C) to the ESP device
         if self.is_connected:
-            self.connection.write(chr(3).encode())
+            self.connection.write("RESTART")
 
     def check_esp_idle_response(self):
         # Check if the ESP device is in idle state
@@ -87,6 +87,7 @@ class USBConnection:
                         if self.waiting_for_idle and line == "IDLE":
                             self.connection_established = True
                             self.waiting_for_idle = False
+                        
                         self.dispatcher_callback(line)
             time.sleep(0.001)
                 
@@ -98,7 +99,7 @@ class USBConnection:
         # Stop the read queue loop
         self.running = False
 
-    ################ ESP to queue block
+    ################ ESP to queue 
     def start_esp_to_queue(self):
         # Start the ESP to queue thread
         self.receive_running = True

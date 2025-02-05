@@ -26,17 +26,13 @@ class MeasureApp:
         self.x_data = []
         self.y_data = []
         self.z_data = []
-        self.last_y = None
 
         # Embed the plot in a Tkinter canvas
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        self.redraw_plot()
 
         # Start the measurement process
-        self.send_measure_to_esp()
-
-    def send_measure_to_esp(self):
-        # Send the MEASURE command to the ESP device
         self.write_command("MEASURE")
 
     def wrapper_return_to_main(self):
@@ -47,29 +43,18 @@ class MeasureApp:
     def update_data(self, message):
         # Update the Parameter interface with new data
         data = message.split(",")
+        try:
+            x, y, z = int(data[1]), int(data[2]), int(data[3])
+        except Exception as e:
+            print(f"Error: {e}, \n{message}")
+            return False
 
-        if len(data) == 4:
-            try:
-                x, y, z = int(data[1]), int(data[2]), int(data[3])
-                self.master.after(0, self.update_plot_data, x, y, z)
-            except ValueError:
-                pass
-        elif data == ['DATA', 'DONE']:
-            # Update rest of data
-            self.redraw_plot()
-            print("Measurement complete")
-        else:
-            print(data)
-
-    def update_plot_data(self, x, y, z):
-        # Append new data points
+       
         self.x_data.append(x)
         self.y_data.append(y)
         self.z_data.append(z)
 
-        # Update the plot only if y has changed
-        if self.last_y is None or y != self.last_y:
-            self.last_y = y
+        if x==0:
             self.redraw_plot()
 
     def redraw_plot(self):
