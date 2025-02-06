@@ -91,6 +91,12 @@ class MasterGui:
         self.scrollbar.pack(side="right", fill="y")
         self.terminal["yscrollcommand"] = self.scrollbar.set
 
+        # Create a button to clear the terminal
+        self.clear_terminal_button = Button(
+            self.terminal_frame, text="Clear Terminal" #, command=self.clear_terminal
+        )
+        
+        self.clear_terminal_button.pack(pady=10)
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
         self.app_frame.pack(side="right", fill="both", expand=True)
