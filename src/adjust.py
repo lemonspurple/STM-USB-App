@@ -118,7 +118,7 @@ class AdjustApp:
 
         # Add Back button to return to the main interface
         self.btn_back = Button(
-            self.tip_frame, text="Back", command=self.wrapper_return_to_main
+            self.tip_frame, text="Stop", command=self.wrapper_return_to_main
         )
         self.btn_back.pack(pady=10)
         
