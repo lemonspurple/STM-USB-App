@@ -10,7 +10,7 @@ from tkinter import (
     Menu,
     Listbox,
     SINGLE,
-    PhotoImage
+    PhotoImage,
 )
 from tkinter import ttk
 import usb_connection
@@ -84,22 +84,31 @@ class MasterGui:
 
         # Create a text widget to act as a terminal
         self.terminal = Text(self.terminal_frame, height=15, width=30)
-        self.terminal.pack(side="left", fill="both", expand=False)
+        self.terminal.grid(row=0, column=0, sticky="nsew")
 
         # Create a scrollbar for the terminal
         self.scrollbar = Scrollbar(self.terminal_frame, command=self.terminal.yview)
-        self.scrollbar.pack(side="right", fill="y")
+        self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.terminal["yscrollcommand"] = self.scrollbar.set
 
         # Create a button to clear the terminal
         self.clear_terminal_button = Button(
-            self.terminal_frame, text="Clear Terminal" #, command=self.clear_terminal
+            self.terminal_frame, text="Clear Terminal", command=self.clear_terminal
         )
-        
-        self.clear_terminal_button.pack(pady=10)
+        self.clear_terminal_button.grid(row=1, column=0, columnspan=2, pady=10)
+
+        # Configure grid weights to make the terminal expand
+        self.terminal_frame.grid_rowconfigure(0, weight=1)
+        self.terminal_frame.grid_columnconfigure(0, weight=1)
+
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
         self.app_frame.pack(side="right", fill="both", expand=True)
+
+    def clear_terminal(self):
+        # Clear the terminal content
+        if self.terminal and self.terminal.winfo_exists():
+            self.terminal.delete(1.0, END)
 
     def select_port(self):
         # Create a dialog to select the COM port
@@ -179,7 +188,6 @@ class MasterGui:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
-
         if self.terminal and self.terminal.winfo_exists():
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
@@ -209,7 +217,7 @@ class MasterGui:
                     self.measure_app.update_data(message)
 
                 # Plot next set of data
-                if ms[1]=="0":
+                if ms[1] == "0":
                     self.update_terminal(f"Processing Y {ms[2]}")
             except Exception as e:
                 self.update_terminal(f"Error measure: {message}, \nError: {e}")
@@ -222,10 +230,11 @@ class MasterGui:
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Open the MEASURE interface in the app frame
-        self.measure_app=measure.MeasureApp(
+        self.measure_app = measure.MeasureApp(
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main)
+            return_to_main=self.return_to_main,
+        )
 
     def open_adjust(self):
         # Open the ADJUST interface
@@ -239,7 +248,7 @@ class MasterGui:
         self.adjust_app = AdjustApp(
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main
+            return_to_main=self.return_to_main,
         )
 
     def open_parameter(self):

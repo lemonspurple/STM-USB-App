@@ -60,6 +60,7 @@ class USBConnection:
         if self.is_connected:
             try:
                 self.connection.write((command + "\n").encode())
+                
                 self.update_terminal(f"To STM: {command}")
             except serial.SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
@@ -76,7 +77,6 @@ class USBConnection:
     def read_queue_loop(self):
         # Loop to read messages from the data queue and dispatch them
         global STATUS
-        self.update_terminal("Foo start_read_queue")
         buffer = ""
         while self.running:
             while not self.data_queue.empty():
@@ -90,10 +90,6 @@ class USBConnection:
                         
                         self.dispatcher_callback(line)
             time.sleep(0.001)
-                
-
-         
-        self.update_terminal("Foo stop_read_queue")
 
     def stop_read_queue(self):
         # Stop the read queue loop

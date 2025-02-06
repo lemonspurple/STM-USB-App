@@ -139,7 +139,7 @@ class AdjustApp:
         newy = self.slider_y.get()
         newz = self.slider_z.get()
 
-        sendstring = f"TIP,{newx},{newy},{newz}\n"
+        sendstring = f"TIP,{newx},{newy},{newz}"
         try:
             self.write_command(sendstring)
         except Exception as e:
