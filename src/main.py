@@ -25,7 +25,7 @@ import os
 STATUS = "INIT"
 
 
-class EspApiClient:
+class MasterGui:
     def __init__(self, master):
         self.master = master
         self.master.title("500 EUR RTM - Connecting ...")
@@ -286,6 +286,6 @@ if __name__ == "__main__":
     style.theme_use("default")  # Use a simple theme
     style.configure("Thin.Horizontal.TProgressbar", thickness=10)  # Set the thickness
 
-    esp_api_client = EspApiClient(root)
+    esp_api_client = MasterGui(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
     root.mainloop()
