@@ -45,7 +45,7 @@ class USBConnection:
     def esp_restart(self):
         # Send a restart command (Ctrl+C) to the ESP device
         if self.is_connected:
-            self.connection.write("RESTART")
+            self.connection.write("STOP")
 
     def check_esp_idle_response(self):
         # Check if the ESP device is in idle state

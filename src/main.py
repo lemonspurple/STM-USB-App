@@ -79,7 +79,7 @@ class MasterGui:
         # Create a Tools menu
         self.tools_menu = Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Tools", menu=self.tools_menu)
-        self.tools_menu.add_command(label="Adjust", command=self.open_adjust)
+        self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
         self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
 
         # Create a frame to hold the terminal and scrollbar
@@ -226,6 +226,20 @@ class MasterGui:
             except Exception as e:
                 self.update_terminal(f"Error measure: {message}, \nError: {e}")
 
+    def disable_menu(self):
+        # Disable all menu points
+        self.menu_bar.entryconfig("File", state="disabled")
+        self.menu_bar.entryconfig("Measure", state="disabled")
+        self.menu_bar.entryconfig("Parameter", state="disabled")
+        self.menu_bar.entryconfig("Tools", state="disabled")
+
+    def enable_menu(self):
+        # Enable all menu points
+        self.menu_bar.entryconfig("File", state="normal")
+        self.menu_bar.entryconfig("Measure", state="normal")
+        self.menu_bar.entryconfig("Parameter", state="normal")
+        self.menu_bar.entryconfig("Tools", state="normal")
+
     def open_measure(self):
         # Open the MEASURE interface
         global STATUS
@@ -239,6 +253,7 @@ class MasterGui:
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
         )
+        self.disable_menu()
 
     def open_adjust(self):
         # Open the ADJUST interface
@@ -254,6 +269,7 @@ class MasterGui:
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
         )
+        self.disable_menu()
 
     def open_sinus(self):
         # Open the SINUS interface
@@ -266,9 +282,10 @@ class MasterGui:
         self.sinus_app = SinusApp(
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
-            return_to_main = self.return_to_main,
+            return_to_main=self.return_to_main,
         )
         self.sinus_app.request_sinus()
+        self.disable_menu()
 
     def open_parameter(self):
         # Open the PARAMETER interface
@@ -284,17 +301,19 @@ class MasterGui:
             self.app_frame, self.usb_conn.write_command, self.return_to_main
         )
         self.parameter_app.request_parameter()
+        self.disable_menu()
 
     def return_to_main(self):
         # Restart esp
         # self.usb_conn.esp_restart()
 
-        self.usb_conn.write_command("RESTART")
+        self.usb_conn.write_command("STOP")
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Recreate the main interface
         self.create_main_interface()
+        self.enable_menu()
 
     def create_main_interface(self):
         # Clear the existing interface

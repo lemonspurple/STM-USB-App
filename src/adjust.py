@@ -42,13 +42,13 @@ class AdjustApp:
         self.tip_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Create LabelFrames for Tip X, Tip Y, Tip Z and place them from left to right
-        self.tip_x_frame = LabelFrame(self.tip_frame, text="Tip X")
+        self.tip_x_frame = LabelFrame(self.tip_frame, text="DAC X")
         self.tip_x_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
 
-        self.tip_y_frame = LabelFrame(self.tip_frame, text="Tip Y")
+        self.tip_y_frame = LabelFrame(self.tip_frame, text="DAC Y")
         self.tip_y_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
 
-        self.tip_z_frame = LabelFrame(self.tip_frame, text="Tip Z")
+        self.tip_z_frame = LabelFrame(self.tip_frame, text="DAC Z")
         self.tip_z_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
 
         # SLIDERS X Y Z
