@@ -72,11 +72,11 @@ class MasterGui:
         # Create a Measure menu
         self.menu_bar.add_command(label="Measure", command=self.open_measure)
 
-        # Create an Adjust menu
-        self.menu_bar.add_command(label="Adjust", command=self.open_adjust)
-
         # Create a Parameter menu
         self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
+
+        # Create an Adjust menu
+        self.menu_bar.add_command(label="Tools", command=self.open_adjust)
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
