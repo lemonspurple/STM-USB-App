@@ -1,3 +1,4 @@
+import time
 from tkinter import (
     Tk,
     Frame,
@@ -192,7 +193,11 @@ class MasterGui:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
-        if self.terminal and self.terminal.winfo_exists():
+        if (
+            self.master.winfo_exists()
+            and self.terminal
+            and self.terminal.winfo_exists()
+        ):
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
 
@@ -304,14 +309,14 @@ class MasterGui:
         self.disable_menu()
 
     def return_to_main(self):
-        # Restart esp
-        # self.usb_conn.esp_restart()
-
         self.usb_conn.write_command("STOP")
+        # Wait until all remaining data are shown in terminal
+
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Recreate the main interface
+        
         self.create_main_interface()
         self.enable_menu()
 
@@ -327,10 +332,12 @@ class MasterGui:
         messagebox.showinfo("Settings", "Settings window not implemented yet.")
 
     def on_closing(self):
-        # Stop receiving data and close the application
-        if self.usb_conn.esp_to_queue:
-            self.usb_conn.esp_to_queue.stop_esp_to_queue()
-        self.master.destroy()
+        try:
+            self.usb_conn.write_command("STOP")
+        except:
+            pass
+        finally:
+            self.master.destroy()
 
 
 if __name__ == "__main__":

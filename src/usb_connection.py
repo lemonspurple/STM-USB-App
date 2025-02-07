@@ -95,6 +95,10 @@ class USBConnection:
         # Stop the read queue loop
         self.running = False
 
+    def queue_is_empty(self):
+        # Check if the data queue is empty
+        return self.data_queue.empty()
+
     ################ ESP to queue 
     def start_esp_to_queue(self):
         # Start the ESP to queue thread
