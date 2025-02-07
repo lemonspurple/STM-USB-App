@@ -13,6 +13,7 @@ from tkinter import (
     PhotoImage,
 )
 from tkinter import ttk
+from sinus import SinusApp
 import usb_connection
 import measure
 from adjust import AdjustApp
@@ -75,8 +76,11 @@ class MasterGui:
         # Create a Parameter menu
         self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
 
-        # Create an Adjust menu
-        self.menu_bar.add_command(label="Tools", command=self.open_adjust)
+        # Create a Tools menu
+        self.tools_menu = Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Tools", menu=self.tools_menu)
+        self.tools_menu.add_command(label="Adjust", command=self.open_adjust)
+        self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -250,6 +254,21 @@ class MasterGui:
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
         )
+
+    def open_sinus(self):
+        # Open the SINUS interface
+        global STATUS
+        STATUS = "SINUS"
+        # Clear the app frame
+        for widget in self.app_frame.winfo_children():
+            widget.destroy()
+        # Open the SINUS interface in the app frame
+        self.sinus_app = SinusApp(
+            master=self.app_frame,
+            write_command=self.usb_conn.write_command,
+            return_to_main = self.return_to_main,
+        )
+        self.sinus_app.request_sinus()
 
     def open_parameter(self):
         # Open the PARAMETER interface
