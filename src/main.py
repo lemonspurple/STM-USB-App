@@ -218,7 +218,7 @@ class MasterGui:
             if self.parameter_app:
                 self.parameter_app.update_data(message)
         elif messagetype == "TUNNEL":
-            self.update_terminal(message)
+            #self.update_terminal(message)
             if self.tunnel_app:
                 self.tunnel_app.update_data(message)
             
