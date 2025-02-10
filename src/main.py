@@ -15,6 +15,7 @@ from tkinter import (
 )
 from tkinter import ttk
 from sinus import SinusApp
+from tunnel import TunnelApp
 import usb_connection
 import measure
 from adjust import AdjustApp
@@ -82,6 +83,7 @@ class MasterGui:
         self.menu_bar.add_cascade(label="Tools", menu=self.tools_menu)
         self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
         self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
+        self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -215,6 +217,11 @@ class MasterGui:
             self.update_terminal(message)
             if self.parameter_app:
                 self.parameter_app.update_data(message)
+        elif messagetype == "TUNNEL":
+            self.update_terminal(message)
+            if self.tunnel_app:
+                self.tunnel_app.update_data(message)
+            
         elif messagetype == "DATA":
             try:
                 if len(ms) == 2 and ms[1] == "DONE":
@@ -254,6 +261,21 @@ class MasterGui:
             widget.destroy()
         # Open the MEASURE interface in the app frame
         self.measure_app = measure.MeasureApp(
+            master=self.app_frame,
+            write_command=self.usb_conn.write_command,
+            return_to_main=self.return_to_main,
+        )
+        self.disable_menu()
+
+    def open_tunnel(self):
+
+        global STATUS
+        STATUS = "TUNNEL"
+
+        for widget in self.app_frame.winfo_children():
+            widget.destroy()
+
+        self.tunnel_app = TunnelApp(
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
@@ -316,7 +338,7 @@ class MasterGui:
         for widget in self.app_frame.winfo_children():
             widget.destroy()
         # Recreate the main interface
-        
+
         self.create_main_interface()
         self.enable_menu()
 
