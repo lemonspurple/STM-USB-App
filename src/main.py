@@ -21,11 +21,19 @@ import measure
 from adjust import AdjustApp
 from parameter import ParameterApp
 import serial.tools.list_ports
-import settings
+import configparser
 import os
 
 # Define the global STATUS variable
 STATUS = "INIT"
+# Create a ConfigParser object
+config = configparser.ConfigParser()
+
+# Define the path to the config file
+config_file = os.path.join(os.path.dirname(__file__), "config.ini")
+
+# Read the config file
+config.read(config_file)
 
 
 class MasterGui:
@@ -165,7 +173,7 @@ class MasterGui:
         selected_index = self.port_listbox.curselection()
         if selected_index:
             selected_port = self.port_listbox.get(selected_index)
-            settings.USB_PORT = selected_port
+            config.set("USB", "PORT", selected_port)
             self.port_dialog.destroy()
             self.connect()
         else:
@@ -175,20 +183,20 @@ class MasterGui:
         # Establish a connection to the selected COM port
         global STATUS
         try:
-            self.usb_conn.port = settings.USB_PORT
+            self.usb_conn.port = config.get("USB", "PORT")
             if self.usb_conn.establish_connection():
                 self.usb_conn.check_esp_idle_response()
                 # Update the window title with the COM port
                 self.master.title(
                     f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
                 )
-
+                
                 STATUS = "IDLE"
                 return True
             else:
                 return False
         except Exception as e:
-            self.update_terminal(f"Error establishing connection: {e}")
+            self.update_terminal(f"FooError establishing connection: {e}")
             messagebox.showerror(
                 "Connection Error", f"Error establishing connection: {e}"
             )
@@ -218,10 +226,10 @@ class MasterGui:
             if self.parameter_app:
                 self.parameter_app.update_data(message)
         elif messagetype == "TUNNEL":
-            #self.update_terminal(message)
+            # self.update_terminal(message)
             if self.tunnel_app:
                 self.tunnel_app.update_data(message)
-            
+
         elif messagetype == "DATA":
             try:
                 if len(ms) == 2 and ms[1] == "DONE":

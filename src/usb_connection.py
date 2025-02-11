@@ -1,6 +1,7 @@
 import time
 import serial
-import settings
+import configparser
+import os
 import queue
 import threading
 import serial.tools.list_ports
@@ -9,8 +10,6 @@ import serial.tools.list_ports
 class USBConnection:
     def __init__(self, update_terminal_callback, dispatcher_callback):
         # Initialize USBConnection with callbacks and settings
-        self.port = settings.USB_PORT
-        self.baudrate = settings.USB_BAUDRATE
         self.connection = None
         self.is_connected = False
         self.update_terminal = update_terminal_callback
@@ -21,6 +20,22 @@ class USBConnection:
         self.waiting_for_idle = False
         self.running = False
         self.receive_running = False
+        # Load configuration from config.ini
+        self.load_config()
+
+    def load_config(self):
+        # Define the path to the config file
+        config_file = os.path.join(os.path.dirname(__file__), "config.ini")
+
+        # Create a ConfigParser object
+        config = configparser.ConfigParser()
+
+        # Read the config file
+        config.read(config_file)
+
+        # Get the USB settings
+        self.port = config.get("USB", "PORT")
+        self.baudrate = config.getint("USB", "BAUDRATE")
 
     def is_com_port_available(self):
         # Check if the specified COM port is available
@@ -28,10 +43,10 @@ class USBConnection:
         return self.port in available_ports
 
     def establish_connection(self):
-        # Establish a connection to the specified COM port
-        if not self.is_com_port_available():
-            self.update_terminal(f"COM port {self.port} is not available.")
-            return False
+        # # Establish a connection to the specified COM port
+        # if not self.is_com_port_available():
+        #     self.update_terminal(f"COM port {self.port} is not available.")
+        #     return False
 
         try:
             self.connection = serial.Serial(self.port, self.baudrate, timeout=1)
@@ -60,7 +75,7 @@ class USBConnection:
         if self.is_connected:
             try:
                 self.connection.write((command + "\n").encode())
-                
+
                 self.update_terminal(f"To STM: {command}")
             except serial.SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
@@ -87,7 +102,7 @@ class USBConnection:
                         if self.waiting_for_idle and line == "IDLE":
                             self.connection_established = True
                             self.waiting_for_idle = False
-                        
+
                         self.dispatcher_callback(line)
             time.sleep(0.001)
 
@@ -99,7 +114,7 @@ class USBConnection:
         # Check if the data queue is empty
         return self.data_queue.empty()
 
-    ################ ESP to queue 
+    ################ ESP to queue
     def start_esp_to_queue(self):
         # Start the ESP to queue thread
         self.receive_running = True
