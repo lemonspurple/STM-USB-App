@@ -4,12 +4,16 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 class TunnelApp:
-    def __init__(self, master, write_command, return_to_main):
+    def __init__(
+        self, master, write_command, return_to_main, target_adc, tolerance_adc
+    ):
         # Initialize TunnelApp with callbacks and settings
         self.master = master
         self.write_command = write_command
         self.return_to_main = return_to_main
         self.is_active = True
+        self.target_adc = target_adc
+        self.tolerance_adc = tolerance_adc
 
         # Create a frame to hold the widgets
         self.frame = Frame(master)
@@ -42,6 +46,10 @@ class TunnelApp:
         # Start the measurement process
         self.write_command("TUNNEL")
 
+    def update_adc_limits(self,target_adc, limit_adc):
+        self.target_adc = target_adc
+        self.limit_adc = limit_adc
+
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
         self.is_active = False
@@ -66,7 +74,7 @@ class TunnelApp:
 
         if flag == 0:
             self.redraw_plot()
-        
+
         elif self.counter % 100 == 0:
             self.redraw_plot()
 
@@ -78,14 +86,27 @@ class TunnelApp:
             self.adc_data,
             c=self.colors,
             marker="o",
-            label="ADC",
+            label="Tunnel",
         )
         self.ax.scatter(
-            range(len(self.z_data)), self.z_data, c=self.colors, marker="x", label="DAC Z"
+            range(len(self.z_data)),
+            self.z_data,
+            c=self.colors,
+            marker="x",
+            label="DAC Z",
         )
         self.ax.set_xlim(
             0, max(100, len(self.adc_data))
         )  # Adjust x-axis limit based on data length
+
+        # self.ax.axhline(y=self.target_adc, color="blue", linestyle="--", label="Target ADC")
+        self.ax.axhline(
+            y=self.target_adc + self.tolerance_adc,
+            color="orange",
+            linestyle="--",
+            label="Limit hi",
+        )
+        self.ax.axhline(y=self.target_adc - self.tolerance_adc, color="orange", linestyle="--", label="Linit Lo")
         self.ax.set_xlim(0, 50)
         self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
         self.ax.set_xlabel("Counter")

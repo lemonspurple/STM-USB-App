@@ -67,6 +67,8 @@ class MasterGui:
         self.parameter_app = None
 
         self.measure_app = None
+        self.target_adc = 0
+        self.tolerance_adc = 0
 
     def setup_gui_interface(self):
         # Create a menu bar
@@ -190,7 +192,7 @@ class MasterGui:
                 self.master.title(
                     f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
                 )
-                
+
                 STATUS = "IDLE"
                 return True
             else:
@@ -223,6 +225,11 @@ class MasterGui:
                 self.adjust_app.update_data(message)
         elif messagetype == "PARAMETER":
             self.update_terminal(message)
+            if ms[1] == "targetNa":
+                
+                self.target_adc = self.calculate_adc_value(ms[2])
+            if ms[1] == "toleranceNa":
+                self.tolerance_adc = self.calculate_adc_value(ms[2])
             if self.parameter_app:
                 self.parameter_app.update_data(message)
         elif messagetype == "TUNNEL":
@@ -276,7 +283,7 @@ class MasterGui:
         self.disable_menu()
 
     def open_tunnel(self):
-
+        #self.usb_conn.write_command("PARAMETER,?")
         global STATUS
         STATUS = "TUNNEL"
 
@@ -287,6 +294,8 @@ class MasterGui:
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
+            target_adc=self.target_adc,
+            tolerance_adc=self.tolerance_adc
         )
         self.disable_menu()
 
@@ -326,7 +335,6 @@ class MasterGui:
         # Open the PARAMETER interface
         global STATUS
         STATUS = "PARAMETER"
-        # self.usb_conn.write_command("PARAMETER,?")
 
         # Clear the app frame
         for widget in self.app_frame.winfo_children():
@@ -369,6 +377,22 @@ class MasterGui:
         finally:
             self.master.destroy()
 
+    def calculate_adc_value(self, nA):
+        # Convert nA to float
+        try:
+            nA = float(nA)
+        except ValueError:
+            self.update_terminal(f"Invalid nA value: {nA}")
+            return 0
+        # Calculate adcValue using the formula
+        adc_voltage_divider = float(config.get("PARAMETER", "ADC_VOLTAGE_DIVIDER"))
+        adc_value_max = float(config.get("PARAMETER", "ADC_VALUE_MAX"))
+        adc_voltage_max = float(config.get("PARAMETER", "ADC_VOLTAGE_MAX"))
+
+        adc_value = (nA / adc_voltage_divider) * (adc_value_max / adc_voltage_max)
+        adc_value = int(adc_value)  # Convert to integer
+        return adc_value
+
 
 if __name__ == "__main__":
     root = Tk()
@@ -378,4 +402,5 @@ if __name__ == "__main__":
 
     esp_api_client = MasterGui(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
+    root.after(1000, esp_api_client.usb_conn.write_command, "PARAMETER,?")
     root.mainloop()
