@@ -40,7 +40,7 @@ class MasterGui:
     def __init__(self, master):
         self.master = master
         self.master.title("500 EUR RTM - Connecting ...")
-        self.master.geometry("800x600")
+        self.master.geometry("900x600")
 
         # Set the window icon
         icon_path = os.path.join(

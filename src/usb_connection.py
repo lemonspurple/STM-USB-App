@@ -10,10 +10,10 @@ import serial.tools.list_ports
 class USBConnection:
     def __init__(self, update_terminal_callback, dispatcher_callback):
         # Initialize USBConnection with callbacks and settings
-        self.connection = None
-        self.is_connected = False
         self.update_terminal = update_terminal_callback
         self.dispatcher_callback = dispatcher_callback
+        self.connection = None
+        self.is_connected = False
         self.connection_established = False
         self.data_queue = queue.Queue()
         self.esp_to_queue = None
@@ -43,10 +43,10 @@ class USBConnection:
         return self.port in available_ports
 
     def establish_connection(self):
-        # # Establish a connection to the specified COM port
-        # if not self.is_com_port_available():
-        #     self.update_terminal(f"COM port {self.port} is not available.")
-        #     return False
+        # Establish a connection to the specified COM port
+        if not self.is_com_port_available():
+            self.update_terminal(f"COM port {self.port} is not available.")
+            return False
 
         try:
             self.connection = serial.Serial(self.port, self.baudrate, timeout=1)
@@ -75,7 +75,6 @@ class USBConnection:
         if self.is_connected:
             try:
                 self.connection.write((command + "\n").encode())
-
                 self.update_terminal(f"To STM: {command}")
             except serial.SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
@@ -95,9 +94,11 @@ class USBConnection:
         buffer = ""
         while self.running:
             while not self.data_queue.empty():
-                buffer += self.data_queue.get() + "\n"  # Add newline to simulate complete lines
-                while '\n' in buffer:
-                    line, buffer = buffer.split('\n', 1)
+                buffer += (
+                    self.data_queue.get() + "\n"
+                )  # Add newline to simulate complete lines
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
                     if line:
                         if self.waiting_for_idle and line == "IDLE":
                             self.connection_established = True
@@ -120,19 +121,23 @@ class USBConnection:
         self.receive_running = True
         threading.Thread(target=self.esp_to_queue_loop, daemon=True).start()
 
-    def stop_esp_to_queue(self):
-        # Stop the ESP to queue thread
-        self.receive_running = False
-
+   
     def esp_to_queue_loop(self):
         # Loop to read responses from the ESP device and put them in the data queue
-
+        buffer = ""
         while self.receive_running:
             try:
-                response = self.connection.readline().decode().strip()
-                if response:
-                    self.data_queue.put(response)
+                # Read available data from the serial port
+                if self.connection.in_waiting > 0:
+                    buffer += self.connection.read(self.connection.in_waiting).decode()
+                    lines = buffer.split("\n")
+                    buffer = lines.pop()  # Keep the last partial line in the buffer
+
+                    for line in lines:
+                        if line.strip():
+                            self.data_queue.put(line.strip())
             except Exception as e:
                 print(f"Error in esp_to_queue: {e}")
                 self.receive_running = False
                 raise
+            

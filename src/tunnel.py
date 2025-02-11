@@ -64,9 +64,10 @@ class TunnelApp:
         self.z_data.append(z)
         self.colors.append("red" if flag == 0 else "green")
 
-       
+        if flag == 0:
+            self.redraw_plot()
         
-        if self.counter % 100 == 0:
+        elif self.counter % 100 == 0:
             self.redraw_plot()
 
     def redraw_plot(self):
@@ -80,13 +81,13 @@ class TunnelApp:
             label="ADC",
         )
         self.ax.scatter(
-            range(len(self.z_data)), self.z_data, c=self.colors, marker="x", label="Z"
+            range(len(self.z_data)), self.z_data, c=self.colors, marker="x", label="DAC Z"
         )
         self.ax.set_xlim(
             0, max(100, len(self.adc_data))
         )  # Adjust x-axis limit based on data length
-        self.ax.set_xlim(0, 5000)
-        self.ax.set_ylim(0, 0x7FFF)  # Adjust y-axis limit if needed
+        self.ax.set_xlim(0, 50)
+        self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
         self.ax.set_xlabel("Counter")
         self.ax.set_ylabel("Value")
         self.ax.set_title("Data Values over Counter")
