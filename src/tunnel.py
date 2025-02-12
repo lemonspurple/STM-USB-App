@@ -106,7 +106,7 @@ class TunnelApp:
             linestyle="--",
             label="Limit hi",
         )
-        self.ax.axhline(y=self.target_adc - self.tolerance_adc, color="orange", linestyle="--", label="Linit Lo")
+        self.ax.axhline(y=self.target_adc - self.tolerance_adc, color="orange", linestyle="--", label="Limit Lo")
         self.ax.set_xlim(0, 50)
         self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
         self.ax.set_xlabel("Counter")
