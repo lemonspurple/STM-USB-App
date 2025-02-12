@@ -105,7 +105,7 @@ class USBConnection:
                             self.waiting_for_idle = False
 
                         self.dispatcher_callback(line)
-            time.sleep(0.001)
+            time.sleep(0.0001)
 
     def stop_read_queue(self):
         # Stop the read queue loop

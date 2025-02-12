@@ -1,6 +1,8 @@
 from tkinter import Frame, Button
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import configparser
+import os
 
 
 class TunnelApp:
@@ -25,6 +27,10 @@ class TunnelApp:
         )
         self.btn_back.pack(pady=10)
 
+        # Create a Restart button to restart the TunnelApp
+        self.btn_restart = Button(self.frame, text="Restart", command=self.restart)
+        self.btn_restart.pack(pady=10)
+
         # Initialize the plot
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
@@ -43,10 +49,25 @@ class TunnelApp:
         self.z_data = []
         self.colors = []
 
-        # Start the measurement process
-        self.write_command("TUNNEL")
+        # Read configuration from config.ini
+        config = configparser.ConfigParser()
+        config_file_path = os.path.join(os.path.dirname(__file__), "config.ini")
+        config.read(config_file_path)
 
-    def update_adc_limits(self,target_adc, limit_adc):
+        if not config.has_section("TUNNEL"):
+            config.add_section("TUNNEL")
+        if not config.has_option("TUNNEL", "tunnelcounts"):
+            config.set("TUNNEL", "tunnelcounts", "200")
+            with open(config_file_path, "w") as config_file:
+                config.write(config_file)
+            print("")
+        # Get the tunnelcounts value from the [TUNNEL] section
+        tunnel_counts = config.getint("TUNNEL", "tunnelcounts", fallback=200)
+
+        # Start the measurement process with the read tunnelcounts value
+        self.write_command(f"TUNNEL,{tunnel_counts}")
+
+    def update_adc_limits(self, target_adc, limit_adc):
         self.target_adc = target_adc
         self.limit_adc = limit_adc
 
@@ -54,6 +75,26 @@ class TunnelApp:
         # Set is_active to False and return to the main interface
         self.is_active = False
         self.return_to_main()
+
+    def restart(self):
+        # Clear the plot data
+        self.clear_plot_data()
+        # Restart the TunnelApp
+        self.frame.destroy()
+        self.__init__(
+            self.master,
+            self.write_command,
+            self.return_to_main,
+            self.target_adc,
+            self.tolerance_adc,
+        )
+
+    def clear_plot_data(self):
+        # Clear the plot data
+        self.counter = 0
+        self.adc_data = []
+        self.z_data = []
+        self.colors = []
 
     def update_data(self, message):
         # Update the plot with new data
@@ -71,12 +112,12 @@ class TunnelApp:
         self.adc_data.append(adc)
         self.z_data.append(z)
         self.colors.append("red" if flag == 0 else "green")
+        self.redraw_plot()
+        # if flag == 0:
+        #     self.redraw_plot()
 
-        if flag == 0:
-            self.redraw_plot()
-
-        elif self.counter % 100 == 0:
-            self.redraw_plot()
+        # elif self.counter % 100 == 0:
+        #     self.redraw_plot()
 
     def redraw_plot(self):
         # Clear the plot and redraw
@@ -99,14 +140,18 @@ class TunnelApp:
             0, max(100, len(self.adc_data))
         )  # Adjust x-axis limit based on data length
 
-        # self.ax.axhline(y=self.target_adc, color="blue", linestyle="--", label="Target ADC")
         self.ax.axhline(
             y=self.target_adc + self.tolerance_adc,
             color="orange",
             linestyle="--",
             label="Limit hi",
         )
-        self.ax.axhline(y=self.target_adc - self.tolerance_adc, color="orange", linestyle="--", label="Limit Lo")
+        self.ax.axhline(
+            y=self.target_adc - self.tolerance_adc,
+            color="orange",
+            linestyle="--",
+            label="Limit Lo",
+        )
         self.ax.set_xlim(0, 50)
         self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
         self.ax.set_xlabel("Counter")
