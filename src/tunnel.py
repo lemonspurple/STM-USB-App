@@ -6,9 +6,7 @@ import os
 
 
 class TunnelApp:
-    def __init__(
-        self, master, write_command, return_to_main, target_adc, tolerance_adc
-    ):
+    def __init__(self, master, write_command, return_to_main, target_adc, tolerance_adc):
         # Initialize TunnelApp with callbacks and settings
         self.master = master
         self.write_command = write_command
@@ -22,9 +20,7 @@ class TunnelApp:
         self.frame.pack()
 
         # Create a Back button to return to the main interface
-        self.btn_back = Button(
-            self.frame, text="Stop", command=self.wrapper_return_to_main
-        )
+        self.btn_back = Button(self.frame, text="Stop", command=self.wrapper_return_to_main)
         self.btn_back.pack(pady=10)
 
         # Create a Restart button to restart the TunnelApp
@@ -39,12 +35,15 @@ class TunnelApp:
         self.ax.set_xlim(0, 100)  # Initial limit for x-axis (counter)
         self.ax.set_ylim(0, 0x7FFF)  # Initial limit for y-axis (data values)
         self.ax.set_xlabel("Counter")
+        # Set initial plot limits
+        self.ax.set_xlim(0, 100)  # Initial limit for x-axis (counter)
+        self.ax.set_ylim(0, 0x7FFF)  # Initial limit for y-axis (data values)
+        self.ax.set_xlabel("Counter")
         self.ax.set_ylabel("Value")
         self.ax.set_title("Data Values over Counter")
         self.canvas.draw()
 
         # Initialize data lists
-        self.counter = 0
         self.adc_data = []
         self.z_data = []
         self.colors = []
@@ -88,15 +87,22 @@ class TunnelApp:
             self.target_adc,
             self.tolerance_adc,
         )
+        print(f"Tolerance ADC: {self.tolerance_adc}")
 
     def clear_plot_data(self):
         # Clear the plot data
-        self.counter = 0
         self.adc_data = []
         self.z_data = []
         self.colors = []
 
     def update_data(self, message):
+        if not hasattr(self, 'adc_plot'):
+            # Initialize plot elements
+            self.adc_plot, = self.ax.plot([], [], 'o', label="Tunnel")
+            self.z_plot, = self.ax.plot([], [], 'x', label="DAC Z")
+            self.limit_hi_line = self.ax.axhline(y=self.target_adc + self.tolerance_adc, color="orange", linestyle="--", label="Limit hi")
+            self.limit_lo_line = self.ax.axhline(y=self.target_adc - self.tolerance_adc, color="orange", linestyle="--", label="Limit Lo")
+
         # Update the plot with new data
         data = message.split(",")
         try:
@@ -108,16 +114,12 @@ class TunnelApp:
             print(f"Error: {e}, \n{message}")
             return False
 
-        self.counter += 1
         self.adc_data.append(adc)
         self.z_data.append(z)
         self.colors.append("red" if flag == 0 else "green")
         self.redraw_plot()
-        # if flag == 0:
-        #     self.redraw_plot()
 
-        # elif self.counter % 100 == 0:
-        #     self.redraw_plot()
+    
 
     def redraw_plot(self):
         # Clear the plot and redraw

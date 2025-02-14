@@ -216,42 +216,44 @@ class MasterGui:
     def dispatch_received_data(self, message):
         # Dispatch received data based on the current status
         global STATUS
-        ms = message.split(",")
-        messagetype = ms[0]
+        messages = message.split("\n")
+        for msg in messages:
+            ms = msg.split(",")
+            messagetype = ms[0]
 
-        if messagetype == "ADJUST":
-            self.update_terminal(message)
-            if self.adjust_app and self.adjust_app.is_active:
-                self.adjust_app.update_data(message)
-        elif messagetype == "PARAMETER":
-            self.update_terminal(message)
-            if ms[1] == "targetNa":
-                
-                self.target_adc = self.calculate_adc_value(ms[2])
-            if ms[1] == "toleranceNa":
-                self.tolerance_adc = self.calculate_adc_value(ms[2])
-            if self.parameter_app:
-                self.parameter_app.update_data(message)
-        elif messagetype == "TUNNEL":
-            # self.update_terminal(message)
-            if self.tunnel_app:
-                self.tunnel_app.update_data(message)
+            if messagetype == "ADJUST":
+                self.update_terminal(msg)
+                if self.adjust_app and self.adjust_app.is_active:
+                    self.adjust_app.update_data(msg)
+            elif messagetype == "PARAMETER":
+                self.update_terminal(msg)
+                if ms[1] == "targetNa":
+                    self.target_adc = self.calculate_adc_value(ms[2])
+                if ms[1] == "toleranceNa":
+                    self.tolerance_adc = self.calculate_adc_value(ms[2])
+                if self.parameter_app:
+                    self.parameter_app.update_data(msg)
+            elif messagetype == "TUNNEL":
+                # 
+                self.update_terminal(msg)
+                if self.tunnel_app:
+                    self.tunnel_app.update_data(msg)
 
-        elif messagetype == "DATA":
-            try:
-                if len(ms) == 2 and ms[1] == "DONE":
-                    self.measure_app.redraw_plot()
-                    self.update_terminal("Measurement complete.")
+            elif messagetype == "DATA":
+                try:
+                    if len(ms) == 2 and ms[1] == "DONE":
+                        self.measure_app.redraw_plot()
+                        self.update_terminal("Measurement complete.")
 
-                # self.return_to_main()
-                if len(ms) == 4:
-                    self.measure_app.update_data(message)
+                    # self.return_to_main()
+                    if len(ms) == 4:
+                        self.measure_app.update_data(msg)
 
-                # Plot next set of data
-                if ms[1] == "0":
-                    self.update_terminal(f"Processing Y {ms[2]}")
-            except Exception as e:
-                self.update_terminal(f"Error measure: {message}, \nError: {e}")
+                    # Plot next set of data
+                    if ms[1] == "0":
+                        self.update_terminal(f"Processing Y {ms[2]}")
+                except Exception as e:
+                    self.update_terminal(f"Error measure: {msg}, \nError: {e}")
 
     def disable_menu(self):
         # Disable all menu points
@@ -283,10 +285,10 @@ class MasterGui:
         self.disable_menu()
 
     def open_tunnel(self):
-        #self.usb_conn.write_command("PARAMETER,?")
+        # self.usb_conn.write_command("PARAMETER,?")
         global STATUS
         STATUS = "TUNNEL"
-
+        print(f"FOO1 Tolerance ADC: {self.tolerance_adc}")
         for widget in self.app_frame.winfo_children():
             widget.destroy()
 
@@ -295,7 +297,7 @@ class MasterGui:
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
             target_adc=self.target_adc,
-            tolerance_adc=self.tolerance_adc
+            tolerance_adc=self.tolerance_adc,
         )
         self.disable_menu()
 

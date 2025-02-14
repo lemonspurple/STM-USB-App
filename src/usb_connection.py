@@ -97,14 +97,11 @@ class USBConnection:
                 buffer += (
                     self.data_queue.get() + "\n"
                 )  # Add newline to simulate complete lines
-                while "\n" in buffer:
-                    line, buffer = buffer.split("\n", 1)
-                    if line:
-                        if self.waiting_for_idle and line == "IDLE":
-                            self.connection_established = True
-                            self.waiting_for_idle = False
+                lines = buffer.split("\n")
+                buffer = lines.pop()  # Keep the last partial line in the buffer
 
-                        self.dispatcher_callback(line)
+                if lines:
+                    self.dispatcher_callback("\n".join(lines))
             time.sleep(0.0001)
 
     def stop_read_queue(self):
@@ -121,7 +118,6 @@ class USBConnection:
         self.receive_running = True
         threading.Thread(target=self.esp_to_queue_loop, daemon=True).start()
 
-   
     def esp_to_queue_loop(self):
         # Loop to read responses from the ESP device and put them in the data queue
         buffer = ""
@@ -140,4 +136,3 @@ class USBConnection:
                 print(f"Error in esp_to_queue: {e}")
                 self.receive_running = False
                 raise
-            
