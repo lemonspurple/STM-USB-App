@@ -21,19 +21,12 @@ import measure
 from adjust import AdjustApp
 from parameter import ParameterApp
 import serial.tools.list_ports
-import configparser
+import config_utils
 import os
+import sys
 
 # Define the global STATUS variable
 STATUS = "INIT"
-# Create a ConfigParser object
-config = configparser.ConfigParser()
-
-# Define the path to the config file
-config_file = os.path.join(os.path.dirname(__file__), "config.ini")
-
-# Read the config file
-config.read(config_file)
 
 
 class MasterGui:
@@ -42,10 +35,15 @@ class MasterGui:
         self.master.title("500 EUR RTM - Connecting ...")
         self.master.geometry("900x600")
 
+        # Use sys._MEIPASS to find the file in all environments
+        if hasattr(sys, '_MEIPASS'):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(__file__)
         # Set the window icon
-        icon_path = os.path.join(
-            os.path.dirname(__file__), "../assets/icons/stm_symbol.ico"
-        )
+
+        icon_path = os.path.join(base_path, "assets", "icons", "stm_symbol.ico")
+
         self.master.iconbitmap(icon_path)
 
         self.setup_gui_interface()
@@ -175,7 +173,7 @@ class MasterGui:
         selected_index = self.port_listbox.curselection()
         if selected_index:
             selected_port = self.port_listbox.get(selected_index)
-            config.set("USB", "PORT", selected_port)
+            config_utils.set_config("USB", "port", selected_port) 
             self.port_dialog.destroy()
             self.connect()
         else:
@@ -185,7 +183,7 @@ class MasterGui:
         # Establish a connection to the selected COM port
         global STATUS
         try:
-            self.usb_conn.port = config.get("USB", "PORT")
+            self.usb_conn.port = config_utils.get_config("USB", "port")
             if self.usb_conn.establish_connection():
                 self.usb_conn.check_esp_idle_response()
                 # Update the window title with the COM port
@@ -234,7 +232,7 @@ class MasterGui:
                 if self.parameter_app:
                     self.parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
-                # 
+                #
                 self.update_terminal(msg)
                 if self.tunnel_app:
                     self.tunnel_app.update_data(msg)
@@ -387,9 +385,15 @@ class MasterGui:
             self.update_terminal(f"Invalid nA value: {nA}")
             return 0
         # Calculate adcValue using the formula
-        adc_voltage_divider = float(config.get("PARAMETER", "ADC_VOLTAGE_DIVIDER"))
-        adc_value_max = float(config.get("PARAMETER", "ADC_VALUE_MAX"))
-        adc_voltage_max = float(config.get("PARAMETER", "ADC_VOLTAGE_MAX"))
+        adc_voltage_divider = float(
+            config_utils.get_config("ADC_TO_NA", "adc_voltage_divider")
+        )  # Use the utility function
+        adc_value_max = float(
+            config_utils.get_config("ADC_TO_NA", "adc_value_max")
+        )  # Use the utility function
+        adc_voltage_max = float(
+            config_utils.get_config("ADC_TO_NA", "adc_voltage_max")
+        )  # Use the utility function
 
         adc_value = (nA / adc_voltage_divider) * (adc_value_max / adc_voltage_max)
         adc_value = int(adc_value)  # Convert to integer

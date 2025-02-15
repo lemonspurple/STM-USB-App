@@ -1,12 +1,16 @@
 from tkinter import Frame, Button
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import configparser
+import config_utils
 import os
+import sys
 
 
 class TunnelApp:
-    def __init__(self, master, write_command, return_to_main, target_adc, tolerance_adc):
+    def __init__(
+        self, master, write_command, return_to_main, target_adc, tolerance_adc
+    ):
+
         # Initialize TunnelApp with callbacks and settings
         self.master = master
         self.write_command = write_command
@@ -20,7 +24,9 @@ class TunnelApp:
         self.frame.pack()
 
         # Create a Back button to return to the main interface
-        self.btn_back = Button(self.frame, text="Stop", command=self.wrapper_return_to_main)
+        self.btn_back = Button(
+            self.frame, text="Stop", command=self.wrapper_return_to_main
+        )
         self.btn_back.pack(pady=10)
 
         # Create a Restart button to restart the TunnelApp
@@ -28,43 +34,18 @@ class TunnelApp:
         self.btn_restart.pack(pady=10)
 
         # Initialize the plot
+        self.tunnel_counts = float(config_utils.get_config("TUNNEL", "tunnelcounts", 200))
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        # Set initial plot limits
-        self.ax.set_xlim(0, 100)  # Initial limit for x-axis (counter)
-        self.ax.set_ylim(0, 0x7FFF)  # Initial limit for y-axis (data values)
-        self.ax.set_xlabel("Counter")
-        # Set initial plot limits
-        self.ax.set_xlim(0, 100)  # Initial limit for x-axis (counter)
-        self.ax.set_ylim(0, 0x7FFF)  # Initial limit for y-axis (data values)
-        self.ax.set_xlabel("Counter")
-        self.ax.set_ylabel("Value")
-        self.ax.set_title("Data Values over Counter")
-        self.canvas.draw()
 
         # Initialize data lists
         self.adc_data = []
         self.z_data = []
         self.colors = []
 
-        # Read configuration from config.ini
-        config = configparser.ConfigParser()
-        config_file_path = os.path.join(os.path.dirname(__file__), "config.ini")
-        config.read(config_file_path)
-
-        if not config.has_section("TUNNEL"):
-            config.add_section("TUNNEL")
-        if not config.has_option("TUNNEL", "tunnelcounts"):
-            config.set("TUNNEL", "tunnelcounts", "200")
-            with open(config_file_path, "w") as config_file:
-                config.write(config_file)
-            print("")
-        # Get the tunnelcounts value from the [TUNNEL] section
-        tunnel_counts = config.getint("TUNNEL", "tunnelcounts", fallback=200)
-
         # Start the measurement process with the read tunnelcounts value
-        self.write_command(f"TUNNEL,{tunnel_counts}")
+        self.write_command(f"TUNNEL,{int(self.tunnel_counts)}")
 
     def update_adc_limits(self, target_adc, limit_adc):
         self.target_adc = target_adc
@@ -96,12 +77,22 @@ class TunnelApp:
         self.colors = []
 
     def update_data(self, message):
-        if not hasattr(self, 'adc_plot'):
+        if not hasattr(self, "adc_plot"):
             # Initialize plot elements
-            self.adc_plot, = self.ax.plot([], [], 'o', label="Tunnel")
-            self.z_plot, = self.ax.plot([], [], 'x', label="DAC Z")
-            self.limit_hi_line = self.ax.axhline(y=self.target_adc + self.tolerance_adc, color="orange", linestyle="--", label="Limit hi")
-            self.limit_lo_line = self.ax.axhline(y=self.target_adc - self.tolerance_adc, color="orange", linestyle="--", label="Limit Lo")
+            (self.adc_plot,) = self.ax.plot([], [], "o", label="Tunnel")
+            (self.z_plot,) = self.ax.plot([], [], "x", label="DAC Z")
+            self.limit_hi_line = self.ax.axhline(
+                y=self.target_adc + self.tolerance_adc,
+                color="orange",
+                linestyle="--",
+                label="Limit hi",
+            )
+            self.limit_lo_line = self.ax.axhline(
+                y=self.target_adc - self.tolerance_adc,
+                color="orange",
+                linestyle="--",
+                label="Limit Lo",
+            )
 
         # Update the plot with new data
         data = message.split(",")
@@ -119,8 +110,6 @@ class TunnelApp:
         self.colors.append("red" if flag == 0 else "green")
         self.redraw_plot()
 
-    
-
     def redraw_plot(self):
         # Clear the plot and redraw
         self.ax.clear()
@@ -134,7 +123,7 @@ class TunnelApp:
         self.ax.scatter(
             range(len(self.z_data)),
             self.z_data,
-            c=self.colors,
+            c="black",
             marker="x",
             label="DAC Z",
         )
@@ -154,10 +143,10 @@ class TunnelApp:
             linestyle="--",
             label="Limit Lo",
         )
-        self.ax.set_xlim(0, 50)
+        self.ax.set_xlim(0, self.tunnel_counts)
         self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
         self.ax.set_xlabel("Counter")
-        self.ax.set_ylabel("Value")
-        self.ax.set_title("Data Values over Counter")
+        self.ax.set_ylabel("ADC and DAC Z")
+        self.ax.set_title("Tunnel Current ADC and DAC Z")
         self.ax.legend()
         self.canvas.draw()

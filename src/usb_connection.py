@@ -1,10 +1,11 @@
+import sys
 import time
 import serial
-import configparser
 import os
 import queue
 import threading
 import serial.tools.list_ports
+import config_utils
 
 
 class USBConnection:
@@ -20,22 +21,8 @@ class USBConnection:
         self.waiting_for_idle = False
         self.running = False
         self.receive_running = False
-        # Load configuration from config.ini
-        self.load_config()
-
-    def load_config(self):
-        # Define the path to the config file
-        config_file = os.path.join(os.path.dirname(__file__), "config.ini")
-
-        # Create a ConfigParser object
-        config = configparser.ConfigParser()
-
-        # Read the config file
-        config.read(config_file)
-
-        # Get the USB settings
-        self.port = config.get("USB", "PORT")
-        self.baudrate = config.getint("USB", "BAUDRATE")
+        self.port = config_utils.get_config("USB", "port")
+        self.baudrate = config_utils.get_config("USB", "baudrate")
 
     def is_com_port_available(self):
         # Check if the specified COM port is available
