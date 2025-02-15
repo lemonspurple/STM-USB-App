@@ -232,11 +232,14 @@ class MasterGui:
                 if self.parameter_app:
                     self.parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
-                #
                 self.update_terminal(msg)
                 if self.tunnel_app:
                     self.tunnel_app.update_data(msg)
-
+        
+        
+        
+            elif messagetype == "FIND":
+                self.update_terminal(msg)
             elif messagetype == "DATA":
                 try:
                     if len(ms) == 2 and ms[1] == "DONE":
