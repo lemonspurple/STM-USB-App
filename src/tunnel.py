@@ -23,18 +23,26 @@ class TunnelApp:
         self.frame = Frame(master)
         self.frame.pack()
 
+        # Create a frame for the buttons
+        self.button_frame = Frame(self.frame)
+        self.button_frame.pack(fill="x", pady=10)
+
         # Create a Back button to return to the main interface
         self.btn_back = Button(
-            self.frame, text="Stop", command=self.wrapper_return_to_main
+            self.button_frame, text="Stop", command=self.wrapper_return_to_main
         )
-        self.btn_back.pack(pady=10)
+        self.btn_back.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
         # Create a Restart button to restart the TunnelApp
-        self.btn_restart = Button(self.frame, text="Restart", command=self.restart)
-        self.btn_restart.pack(pady=10)
+        self.btn_restart = Button(
+            self.button_frame, text="Restart", command=self.restart
+        )
+        self.btn_restart.grid(row=0, column=1, padx=10, pady=10, sticky="e")
 
         # Initialize the plot
-        self.tunnel_counts = float(config_utils.get_config("TUNNEL", "tunnelcounts", 200))
+        self.tunnel_counts = float(
+            config_utils.get_config("TUNNEL", "tunnelcounts", 200)
+        )
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)

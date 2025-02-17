@@ -12,17 +12,21 @@ class SinusApp:
 
         # Create a frame to hold the widgets
         self.frame = Frame(master)
-        self.frame.pack()
+        self.frame.pack(fill="both", expand=True)
+
+        # Create a frame for the buttons
+        self.button_frame = Frame(self.frame)
+        self.button_frame.pack(fill="x", pady=10)
+
+        # Create a Stop button to return to the main interface
+        self.btn_stop = Button(
+            self.button_frame, text="Stop", command=self.wrapper_return_to_main
+        )
+        self.btn_stop.pack(side="left", padx=10)
 
         # Create a label to display the sinus signal information
         self.label = tk.Label(self.frame, text="Sinus signal at ADC X, Y, Z")
         self.label.pack(pady=20)
-
-        # Create a Stop button to return to the main interface
-        self.btn_stop = Button(
-            self.frame, text="Stop", command=self.wrapper_return_to_main
-        )
-        self.btn_stop.pack(pady=10)
 
     def wrapper_return_to_main(self):
         # Wrapper function to handle returning to the main interface
