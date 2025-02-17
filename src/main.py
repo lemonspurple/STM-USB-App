@@ -20,10 +20,10 @@ import usb_connection
 import measure
 from adjust import AdjustApp
 from parameter import ParameterApp
-import serial.tools.list_ports
 import config_utils
 import os
 import sys
+import com_port_utils  # Import the com_port_utils module
 
 # Define the global STATUS variable
 STATUS = "INIT"
@@ -36,7 +36,7 @@ class MasterGui:
         self.master.geometry("900x600")
 
         # Use sys._MEIPASS to find the file in all environments
-        if hasattr(sys, '_MEIPASS'):
+        if hasattr(sys, "_MEIPASS"):
             base_path = sys._MEIPASS
         else:
             base_path = os.path.dirname(__file__)
@@ -47,16 +47,11 @@ class MasterGui:
         self.master.iconbitmap(icon_path)
 
         self.setup_gui_interface()
-
         # Initialize the USB connection handler
-        self.usb_conn = usb_connection.USBConnection(
-            update_terminal_callback=self.update_terminal,
-            dispatcher_callback=self.dispatch_received_data,
-        )
+        self.initialize_usb_connection()
 
-        # Attempt to establish a USB connection
-        if not self.connect():
-            self.select_port()
+        # Initialize the idle_received attribute
+        self.idle_received = False
 
         # Initialize the AdjustApp instance
         self.adjust_app = None
@@ -67,6 +62,13 @@ class MasterGui:
         self.measure_app = None
         self.target_adc = 0
         self.tolerance_adc = 0
+
+    def initialize_usb_connection(self):
+        # Initialize the USB connection handler
+        self.usb_conn = usb_connection.USBConnection(
+            update_terminal_callback=self.update_terminal,
+            dispatcher_callback=self.dispatch_received_data,
+        )
 
     def setup_gui_interface(self):
         # Create a menu bar
@@ -125,81 +127,60 @@ class MasterGui:
         if self.terminal and self.terminal.winfo_exists():
             self.terminal.delete(1.0, END)
 
-    def select_port(self):
-        # Create a dialog to select the COM port
-        self.port_dialog = Toplevel(self.master)
-        self.port_dialog.title("Select Port")
-
-        # Center the dialog on the screen
-        self.port_dialog.geometry(
-            "300x300+{}+{}".format(
-                int(self.master.winfo_screenwidth() / 2 - 150),
-                int(self.master.winfo_screenheight() / 2 - 150),
-            )
-        )
-
-        self.port_listbox = Listbox(self.port_dialog, selectmode=SINGLE)
-        self.port_listbox.pack(fill="both", expand=True, padx=10, pady=10)
-
-        self.refresh_ports()
-
-        # Create a frame to hold the buttons
-        button_frame = Frame(self.port_dialog)
-        button_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        self.select_button = Button(
-            button_frame, text="Select", command=self.set_selected_port
-        )
-        self.select_button.pack(side="left", padx=10, pady=10)
-
-        self.refresh_button = Button(
-            button_frame, text="Refresh", command=self.refresh_ports
-        )
-        self.refresh_button.pack(side="right", padx=10, pady=10)
-
-        self.port_dialog.transient(self.master)
-        self.port_dialog.grab_set()
-        self.master.wait_window(self.port_dialog)
-
-    def refresh_ports(self):
-        # Refresh the list of available COM ports
-        self.port_listbox.delete(0, END)
-        ports = list(serial.tools.list_ports.comports())
-        for port in ports:
-            self.port_listbox.insert(END, port.device)
-
-    def set_selected_port(self):
-        # Set the selected COM port
-        selected_index = self.port_listbox.curselection()
-        if selected_index:
-            selected_port = self.port_listbox.get(selected_index)
-            config_utils.set_config("USB", "port", selected_port) 
-            self.port_dialog.destroy()
-            self.connect()
-        else:
-            messagebox.showerror("Port Selection Error", "No port selected.")
-
     def connect(self):
         # Establish a connection to the selected COM port
         global STATUS
-        try:
-            self.usb_conn.port = config_utils.get_config("USB", "port")
-            if self.usb_conn.establish_connection():
-                self.usb_conn.check_esp_idle_response()
-                # Update the window title with the COM port
-                self.master.title(
-                    f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
-                )
 
-                STATUS = "IDLE"
-                return True
-            else:
-                return False
+        self.usb_conn.port = config_utils.get_config("USB", "port")
+        print(f"FOO {self.usb_conn.port}")
+        self.update_terminal(f"Try to connect {self.usb_conn.port}...")
+        print(f"FOO update_terminal started")
+        
+        if not com_port_utils.is_com_port_available(self.usb_conn.port):
+            self.update_terminal(f"COM port {self.usb_conn.port} is not available")
+            return False
+        if not self.usb_conn.establish_connection():
+            self.update_terminal(f"COM port {self.usb_conn.port} cannot connect")
+            return False
+
+        self.usb_conn.start_receiving()
+        try:
+            self.usb_conn.write_command("STOP")
         except Exception as e:
-            self.update_terminal(f"FooError establishing connection: {e}")
-            messagebox.showerror(
-                "Connection Error", f"Error establishing connection: {e}"
-            )
+            self.update_terminal(f"Error sending STOP command")
+            return False
+        self.idle_received = False  # Reset idle_received before waiting
+        start_time = time.time()
+        while not self.idle_received:
+            self.master.update()
+            time.sleep(0.1)
+            if time.time() - start_time > 1:
+                return False
+
+        STATUS = "IDLE"
+        return True
+
+    def try_to_connect(self):
+        # Try to establish a connection and select port if it fails
+
+        
+        result = self.connect()
+        while not result:
+            com_port_utils.select_port(self.master)
+            result = self.connect()
+            
+
+
+            # if messagebox.askyesno("Connection Failed", "Try to connect againnn?"):
+            #     pass
+            # else:
+            #     self.master.quit()
+        # Update the window title with the COM port
+        self.master.title(
+            f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
+        )
+
+        self.usb_conn.write_command("PARAMETER,?")
 
     def update_terminal(self, message):
         # Update the terminal with a new message
@@ -210,6 +191,7 @@ class MasterGui:
         ):
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
+            self.master.update_idletasks()
 
     def dispatch_received_data(self, message):
         # Dispatch received data based on the current status
@@ -218,7 +200,8 @@ class MasterGui:
         for msg in messages:
             ms = msg.split(",")
             messagetype = ms[0]
-
+            if messagetype == "IDLE":
+                self.idle_received = True
             if messagetype == "ADJUST":
                 self.update_terminal(msg)
                 if self.adjust_app and self.adjust_app.is_active:
@@ -235,9 +218,6 @@ class MasterGui:
                 self.update_terminal(msg)
                 if self.tunnel_app:
                     self.tunnel_app.update_data(msg)
-        
-        
-        
             elif messagetype == "FIND":
                 self.update_terminal(msg)
             elif messagetype == "DATA":
@@ -289,7 +269,7 @@ class MasterGui:
         # self.usb_conn.write_command("PARAMETER,?")
         global STATUS
         STATUS = "TUNNEL"
-        print(f"FOO1 Tolerance ADC: {self.tolerance_adc}")
+
         for widget in self.app_frame.winfo_children():
             widget.destroy()
 
@@ -378,7 +358,15 @@ class MasterGui:
         except:
             pass
         finally:
+            self.close_usb_connection()
             self.master.destroy()
+
+    def close_usb_connection(self):
+        # Close the USB connection to free the COM port
+        try:
+            self.usb_conn.close_connection()
+        except Exception as e:
+            self.update_terminal(f"Error closing USB connection: {e}")
 
     def calculate_adc_value(self, nA):
         # Convert nA to float
@@ -411,5 +399,5 @@ if __name__ == "__main__":
 
     esp_api_client = MasterGui(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
-    root.after(1000, esp_api_client.usb_conn.write_command, "PARAMETER,?")
+    root.after(100, esp_api_client.try_to_connect)
     root.mainloop()
