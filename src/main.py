@@ -163,10 +163,17 @@ class MasterGui:
 
         if not self.connect():
             com_port_utils.select_port(self.master, self.connect)
+            
+            # if messagebox.askyesno("Connection Failed", "Try to connect again?"):
+            #     self.try_to_connect()
+            # else:
+            #     self.master.quit()
         # Update the window title with the COM port
         self.master.title(
             f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
         )
+        
+        
 
     def update_terminal(self, message):
         # Update the terminal with a new message
