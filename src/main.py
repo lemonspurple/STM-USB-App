@@ -132,13 +132,15 @@ class MasterGui:
         global STATUS
 
         self.usb_conn.port = config_utils.get_config("USB", "port")
-
+        print(f"FOO {self.usb_conn.port}")
         self.update_terminal(f"Try to connect {self.usb_conn.port}...")
+        print(f"FOO update_terminal started")
+        
         if not com_port_utils.is_com_port_available(self.usb_conn.port):
             self.update_terminal(f"COM port {self.usb_conn.port} is not available")
             return False
         if not self.usb_conn.establish_connection():
-            self.update_terminal(f"COM port {self.usb_conn.port} is not available")
+            self.update_terminal(f"COM port {self.usb_conn.port} cannot connect")
             return False
 
         self.usb_conn.start_receiving()
@@ -161,20 +163,24 @@ class MasterGui:
     def try_to_connect(self):
         # Try to establish a connection and select port if it fails
 
-        if not self.connect():
-            com_port_utils.select_port(self.master, self.connect)
+        
+        result = self.connect()
+        while not result:
+            com_port_utils.select_port(self.master)
+            result = self.connect()
             
-            if messagebox.askyesno("Connection Failed", "Try to connect again?"):
-                self.try_to_connect()
-            else:
-                self.master.quit()
+
+
+            # if messagebox.askyesno("Connection Failed", "Try to connect againnn?"):
+            #     pass
+            # else:
+            #     self.master.quit()
         # Update the window title with the COM port
         self.master.title(
             f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
         )
-        
+
         self.usb_conn.write_command("PARAMETER,?")
-        
 
     def update_terminal(self, message):
         # Update the terminal with a new message
@@ -185,6 +191,7 @@ class MasterGui:
         ):
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
+            self.master.update_idletasks()
 
     def dispatch_received_data(self, message):
         # Dispatch received data based on the current status
@@ -392,5 +399,5 @@ if __name__ == "__main__":
 
     esp_api_client = MasterGui(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
-    root.after(0, esp_api_client.try_to_connect)
+    root.after(100, esp_api_client.try_to_connect)
     root.mainloop()

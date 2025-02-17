@@ -35,7 +35,7 @@ class USBConnection:
             return True
         except serial.SerialException as e:
             self.is_connected = False
-            self.update_terminal(f"Error establishing connection: {e}")
+            #self.update_terminal(f"Error establishing connection: {e}")
             return False
 
     def esp_restart(self):

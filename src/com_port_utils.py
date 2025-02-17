@@ -9,14 +9,13 @@ def refresh_ports(port_listbox):
     for port in ports:
         port_listbox.insert(END, port.device)
 
-def set_selected_port(port_listbox, port_dialog, connect_callback):
+def set_selected_port(port_listbox, port_dialog):
     # Set the selected COM port
     selected_index = port_listbox.curselection()
     if selected_index:
         selected_port = port_listbox.get(selected_index)
         config_utils.set_config("USB", "port", selected_port)
         port_dialog.destroy()
-        connect_callback()
     else:
         messagebox.showerror("Port Selection Error", "No port selected.")
 
@@ -27,7 +26,7 @@ def is_com_port_available(port):
     return port in available_ports
 
 
-def select_port(master, connect_callback):
+def select_port(master):
     # Create a dialog to select the COM port
     port_dialog = Toplevel(master)
     port_dialog.title("Select Port")
@@ -50,7 +49,7 @@ def select_port(master, connect_callback):
     button_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
     select_button = Button(
-        button_frame, text="Select", command=lambda: set_selected_port(port_listbox, port_dialog, connect_callback)
+        button_frame, text="Connect", command=lambda: set_selected_port(port_listbox, port_dialog)
     )
     select_button.pack(side="left", padx=10, pady=10)
 
