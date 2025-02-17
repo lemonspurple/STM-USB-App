@@ -132,9 +132,7 @@ class MasterGui:
         global STATUS
 
         self.usb_conn.port = config_utils.get_config("USB", "port")
-        print(f"FOO {self.usb_conn.port}")
         self.update_terminal(f"Try to connect {self.usb_conn.port}...")
-        print(f"FOO update_terminal started")
         
         if not com_port_utils.is_com_port_available(self.usb_conn.port):
             self.update_terminal(f"COM port {self.usb_conn.port} is not available")
