@@ -153,7 +153,7 @@ class MasterGui:
             self.master.update()
             time.sleep(0.1)
             if time.time() - start_time > 1:
-                raise TimeoutError("Timeout: No idle response received within 1 second")
+                return False
 
         STATUS = "IDLE"
         return True
@@ -164,15 +164,16 @@ class MasterGui:
         if not self.connect():
             com_port_utils.select_port(self.master, self.connect)
             
-            # if messagebox.askyesno("Connection Failed", "Try to connect again?"):
-            #     self.try_to_connect()
-            # else:
-            #     self.master.quit()
+            if messagebox.askyesno("Connection Failed", "Try to connect again?"):
+                self.try_to_connect()
+            else:
+                self.master.quit()
         # Update the window title with the COM port
         self.master.title(
             f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
         )
         
+        self.usb_conn.write_command("PARAMETER,?")
         
 
     def update_terminal(self, message):
