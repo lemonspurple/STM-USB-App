@@ -20,6 +20,13 @@ def set_selected_port(port_listbox, port_dialog, connect_callback):
     else:
         messagebox.showerror("Port Selection Error", "No port selected.")
 
+
+def is_com_port_available(port):
+    # Check if the specified COM port is available
+    available_ports = [p.device for p in serial.tools.list_ports.comports()]
+    return port in available_ports
+
+
 def select_port(master, connect_callback):
     # Create a dialog to select the COM port
     port_dialog = Toplevel(master)

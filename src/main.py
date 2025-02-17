@@ -47,22 +47,11 @@ class MasterGui:
         self.master.iconbitmap(icon_path)
 
         self.setup_gui_interface()
-        print("FOO0")
         # Initialize the USB connection handler
-        self.usb_conn = usb_connection.USBConnection(
-            update_terminal_callback=self.update_terminal,
-            dispatcher_callback=self.dispatch_received_data,
-        )
+        self.initialize_usb_connection()
 
         # Initialize the idle_received attribute
         self.idle_received = False
-
-        # Attempt to establish a USB connection
-        if not self.connect():
-            com_port_utils.select_port(self.master, self.connect)
-            
-            
-            
 
         # Initialize the AdjustApp instance
         self.adjust_app = None
@@ -73,6 +62,13 @@ class MasterGui:
         self.measure_app = None
         self.target_adc = 0
         self.tolerance_adc = 0
+
+    def initialize_usb_connection(self):
+        # Initialize the USB connection handler
+        self.usb_conn = usb_connection.USBConnection(
+            update_terminal_callback=self.update_terminal,
+            dispatcher_callback=self.dispatch_received_data,
+        )
 
     def setup_gui_interface(self):
         # Create a menu bar
@@ -134,50 +130,43 @@ class MasterGui:
     def connect(self):
         # Establish a connection to the selected COM port
         global STATUS
-        try:
-            print("FOO1")
-            self.update_terminal("Attempting to connect to USB device...")
-            self.usb_conn.port = config_utils.get_config("USB", "port")
 
-            print("FOO2")
-            if self.usb_conn.establish_connection():
-                print("FOO3")
-                self.usb_conn.start_receiving()
-                print("FOO4")
-                
-                try:
-                    self.usb_conn.write_command("STOP")
-                except Exception as e:
-                    self.update_terminal(f"Error sending STOP command: {e}")
-                
-                print("FOO5")
-                self.idle_received = False  # Reset idle_received before waiting
+        self.usb_conn.port = config_utils.get_config("USB", "port")
 
-                start_time = time.time()
-                while not self.idle_received:
-                    self.master.update()
-                    time.sleep(0.1)
-                    if time.time() - start_time > 1:
-                        print("FOO6")
-                        raise TimeoutError(
-                            "Timeout: No idle response received within 1 second"
-                        )
-
-                # Update the window title with the COM port
-                self.master.title(
-                    f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
-                )
-
-                STATUS = "IDLE"
-                return True
-            else:
-                return False
-        except Exception as e:
-            self.update_terminal(f"Error establishing connection: {e}")
-            messagebox.showerror(
-                "Connection Error", f"Error establishing connection: {e}"
-            )
+        self.update_terminal(f"Try to connect {self.usb_conn.port}...")
+        if not com_port_utils.is_com_port_available(self.usb_conn.port):
+            self.update_terminal(f"COM port {self.usb_conn.port} is not available")
             return False
+        if not self.usb_conn.establish_connection():
+            self.update_terminal(f"COM port {self.usb_conn.port} is not available")
+            return False
+
+        self.usb_conn.start_receiving()
+        try:
+            self.usb_conn.write_command("STOP")
+        except Exception as e:
+            self.update_terminal(f"Error sending STOP command")
+            return False
+        self.idle_received = False  # Reset idle_received before waiting
+        start_time = time.time()
+        while not self.idle_received:
+            self.master.update()
+            time.sleep(0.1)
+            if time.time() - start_time > 1:
+                raise TimeoutError("Timeout: No idle response received within 1 second")
+
+        STATUS = "IDLE"
+        return True
+
+    def try_to_connect(self):
+        # Try to establish a connection and select port if it fails
+
+        if not self.connect():
+            com_port_utils.select_port(self.master, self.connect)
+        # Update the window title with the COM port
+        self.master.title(
+            f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
+        )
 
     def update_terminal(self, message):
         # Update the terminal with a new message
@@ -265,7 +254,7 @@ class MasterGui:
         # self.usb_conn.write_command("PARAMETER,?")
         global STATUS
         STATUS = "TUNNEL"
-        print(f"FOO1 Tolerance ADC: {self.tolerance_adc}")
+
         for widget in self.app_frame.winfo_children():
             widget.destroy()
 
@@ -395,5 +384,5 @@ if __name__ == "__main__":
 
     esp_api_client = MasterGui(root)
     root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
-    root.after(1000, esp_api_client.usb_conn.write_command, "PARAMETER,?")
+    root.after(0, esp_api_client.try_to_connect)
     root.mainloop()

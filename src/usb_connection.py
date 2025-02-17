@@ -6,6 +6,7 @@ import queue
 import threading
 import serial.tools.list_ports
 import config_utils
+import com_port_utils
 
 
 class USBConnection:
@@ -24,19 +25,9 @@ class USBConnection:
         self.port = config_utils.get_config("USB", "port")
         self.baudrate = config_utils.get_config("USB", "baudrate")
 
-    def is_com_port_available(self):
-        # Check if the specified COM port is available
-        available_ports = [p.device for p in serial.tools.list_ports.comports()]
-        return self.port in available_ports
-
     def establish_connection(self):
-        # Establish a connection to the specified COM port
-        if not self.is_com_port_available():
-            self.update_terminal(f"COM port {self.port} is not available.")
-            return False
 
         try:
-            self.update_terminal(f"Connecting to {self.port} ...")
             self.connection = serial.Serial(
                 self.port, self.baudrate, timeout=2, write_timeout=1
             )
