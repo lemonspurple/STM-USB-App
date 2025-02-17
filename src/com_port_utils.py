@@ -1,6 +1,6 @@
 import serial.tools.list_ports
 import config_utils
-from tkinter import Toplevel, Listbox, SINGLE, Button, Frame, messagebox
+from tkinter import END, Toplevel, Listbox, SINGLE, Button, Frame, messagebox
 
 def refresh_ports(port_listbox):
     # Refresh the list of available COM ports

@@ -23,7 +23,7 @@ from parameter import ParameterApp
 import config_utils
 import os
 import sys
-import com_port_utils  
+import com_port_utils  # Import the com_port_utils module
 
 # Define the global STATUS variable
 STATUS = "INIT"
@@ -47,16 +47,22 @@ class MasterGui:
         self.master.iconbitmap(icon_path)
 
         self.setup_gui_interface()
-
+        print("FOO0")
         # Initialize the USB connection handler
         self.usb_conn = usb_connection.USBConnection(
             update_terminal_callback=self.update_terminal,
             dispatcher_callback=self.dispatch_received_data,
         )
 
+        # Initialize the idle_received attribute
+        self.idle_received = False
+
         # Attempt to establish a USB connection
         if not self.connect():
             com_port_utils.select_port(self.master, self.connect)
+            
+            
+            
 
         # Initialize the AdjustApp instance
         self.adjust_app = None
@@ -129,9 +135,34 @@ class MasterGui:
         # Establish a connection to the selected COM port
         global STATUS
         try:
+            print("FOO1")
+            self.update_terminal("Attempting to connect to USB device...")
             self.usb_conn.port = config_utils.get_config("USB", "port")
+
+            print("FOO2")
             if self.usb_conn.establish_connection():
-                self.usb_conn.check_esp_idle_response()
+                print("FOO3")
+                self.usb_conn.start_receiving()
+                print("FOO4")
+                
+                try:
+                    self.usb_conn.write_command("STOP")
+                except Exception as e:
+                    self.update_terminal(f"Error sending STOP command: {e}")
+                
+                print("FOO5")
+                self.idle_received = False  # Reset idle_received before waiting
+
+                start_time = time.time()
+                while not self.idle_received:
+                    self.master.update()
+                    time.sleep(0.1)
+                    if time.time() - start_time > 1:
+                        print("FOO6")
+                        raise TimeoutError(
+                            "Timeout: No idle response received within 1 second"
+                        )
+
                 # Update the window title with the COM port
                 self.master.title(
                     f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
@@ -142,10 +173,11 @@ class MasterGui:
             else:
                 return False
         except Exception as e:
-            self.update_terminal(f"FooError establishing connection: {e}")
+            self.update_terminal(f"Error establishing connection: {e}")
             messagebox.showerror(
                 "Connection Error", f"Error establishing connection: {e}"
             )
+            return False
 
     def update_terminal(self, message):
         # Update the terminal with a new message
@@ -164,7 +196,8 @@ class MasterGui:
         for msg in messages:
             ms = msg.split(",")
             messagetype = ms[0]
-
+            if messagetype == "IDLE":
+                self.idle_received = True
             if messagetype == "ADJUST":
                 self.update_terminal(msg)
                 if self.adjust_app and self.adjust_app.is_active:
@@ -321,7 +354,15 @@ class MasterGui:
         except:
             pass
         finally:
+            self.close_usb_connection()
             self.master.destroy()
+
+    def close_usb_connection(self):
+        # Close the USB connection to free the COM port
+        try:
+            self.usb_conn.close_connection()
+        except Exception as e:
+            self.update_terminal(f"Error closing USB connection: {e}")
 
     def calculate_adc_value(self, nA):
         # Convert nA to float

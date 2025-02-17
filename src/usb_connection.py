@@ -36,7 +36,10 @@ class USBConnection:
             return False
 
         try:
-            self.connection = serial.Serial(self.port, self.baudrate, timeout=1)
+            self.update_terminal(f"Connecting to {self.port} ...")
+            self.connection = serial.Serial(
+                self.port, self.baudrate, timeout=2, write_timeout=1
+            )
             self.is_connected = True
             return True
         except serial.SerialException as e:
@@ -49,13 +52,13 @@ class USBConnection:
         if self.is_connected:
             self.connection.write("STOP")
 
-    def check_esp_idle_response(self):
-        # Check if the ESP device is in idle state
+    def start_receiving(self):
         if self.is_connected:
-            self.write_command("STOP")
-            time.sleep(0.2)
             self.start_esp_to_queue()
             self.start_read_queue()
+            return True
+        else:
+            return False
 
     def write_command(self, command):
         # Write a command to the ESP device
@@ -63,10 +66,15 @@ class USBConnection:
             try:
                 self.connection.write((command + "\n").encode())
                 self.update_terminal(f"To STM: {command}")
+            except serial.SerialTimeoutException as e:
+                self.update_terminal(f"Timeout error sending command: {e}")
+                print(f"ERROR write_command timeout {e}")
             except serial.SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
+                print(f"ERROR write_command {e}")
         else:
             self.update_terminal("Not connected to any device.")
+            print("ERROR write_command")
 
     ############# Consume queue
     def start_read_queue(self):
