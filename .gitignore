@@ -1,6 +1,7 @@
 build/
 tkinter_usb_app.egg-info/
 
+src/config.ini
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -19,7 +20,6 @@ venv.bak/
 .venv/
 
 # Installer logs
-pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports

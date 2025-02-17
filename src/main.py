@@ -20,10 +20,10 @@ import usb_connection
 import measure
 from adjust import AdjustApp
 from parameter import ParameterApp
-import serial.tools.list_ports
 import config_utils
 import os
 import sys
+import com_port_utils  
 
 # Define the global STATUS variable
 STATUS = "INIT"
@@ -36,7 +36,7 @@ class MasterGui:
         self.master.geometry("900x600")
 
         # Use sys._MEIPASS to find the file in all environments
-        if hasattr(sys, '_MEIPASS'):
+        if hasattr(sys, "_MEIPASS"):
             base_path = sys._MEIPASS
         else:
             base_path = os.path.dirname(__file__)
@@ -56,7 +56,7 @@ class MasterGui:
 
         # Attempt to establish a USB connection
         if not self.connect():
-            self.select_port()
+            com_port_utils.select_port(self.master, self.connect)
 
         # Initialize the AdjustApp instance
         self.adjust_app = None
@@ -125,60 +125,6 @@ class MasterGui:
         if self.terminal and self.terminal.winfo_exists():
             self.terminal.delete(1.0, END)
 
-    def select_port(self):
-        # Create a dialog to select the COM port
-        self.port_dialog = Toplevel(self.master)
-        self.port_dialog.title("Select Port")
-
-        # Center the dialog on the screen
-        self.port_dialog.geometry(
-            "300x300+{}+{}".format(
-                int(self.master.winfo_screenwidth() / 2 - 150),
-                int(self.master.winfo_screenheight() / 2 - 150),
-            )
-        )
-
-        self.port_listbox = Listbox(self.port_dialog, selectmode=SINGLE)
-        self.port_listbox.pack(fill="both", expand=True, padx=10, pady=10)
-
-        self.refresh_ports()
-
-        # Create a frame to hold the buttons
-        button_frame = Frame(self.port_dialog)
-        button_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        self.select_button = Button(
-            button_frame, text="Select", command=self.set_selected_port
-        )
-        self.select_button.pack(side="left", padx=10, pady=10)
-
-        self.refresh_button = Button(
-            button_frame, text="Refresh", command=self.refresh_ports
-        )
-        self.refresh_button.pack(side="right", padx=10, pady=10)
-
-        self.port_dialog.transient(self.master)
-        self.port_dialog.grab_set()
-        self.master.wait_window(self.port_dialog)
-
-    def refresh_ports(self):
-        # Refresh the list of available COM ports
-        self.port_listbox.delete(0, END)
-        ports = list(serial.tools.list_ports.comports())
-        for port in ports:
-            self.port_listbox.insert(END, port.device)
-
-    def set_selected_port(self):
-        # Set the selected COM port
-        selected_index = self.port_listbox.curselection()
-        if selected_index:
-            selected_port = self.port_listbox.get(selected_index)
-            config_utils.set_config("USB", "port", selected_port) 
-            self.port_dialog.destroy()
-            self.connect()
-        else:
-            messagebox.showerror("Port Selection Error", "No port selected.")
-
     def connect(self):
         # Establish a connection to the selected COM port
         global STATUS
@@ -235,9 +181,6 @@ class MasterGui:
                 self.update_terminal(msg)
                 if self.tunnel_app:
                     self.tunnel_app.update_data(msg)
-        
-        
-        
             elif messagetype == "FIND":
                 self.update_terminal(msg)
             elif messagetype == "DATA":
