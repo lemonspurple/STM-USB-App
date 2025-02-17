@@ -1,12 +1,9 @@
-import sys
 import time
 import serial
-import os
 import queue
 import threading
 import serial.tools.list_ports
 import config_utils
-import com_port_utils
 
 
 class USBConnection:
@@ -26,7 +23,6 @@ class USBConnection:
         self.baudrate = config_utils.get_config("USB", "baudrate")
 
     def establish_connection(self):
-
         try:
             self.connection = serial.Serial(
                 self.port, self.baudrate, timeout=2, write_timeout=1
@@ -35,7 +31,6 @@ class USBConnection:
             return True
         except serial.SerialException as e:
             self.is_connected = False
-            #self.update_terminal(f"Error establishing connection: {e}")
             return False
 
     def esp_restart(self):
@@ -67,7 +62,7 @@ class USBConnection:
             self.update_terminal("Not connected to any device.")
             print("ERROR write_command")
 
-    ############# Consume queue
+    # Consume queue
     def start_read_queue(self):
         # Start a background thread to read the data queue
         self.reading_thread = threading.Thread(target=self.read_queue_loop, daemon=True)
@@ -98,7 +93,7 @@ class USBConnection:
         # Check if the data queue is empty
         return self.data_queue.empty()
 
-    ################ ESP to queue
+    # ESP to queue
     def start_esp_to_queue(self):
         # Start the ESP to queue thread
         self.receive_running = True

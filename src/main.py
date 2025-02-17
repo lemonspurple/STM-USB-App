@@ -133,7 +133,7 @@ class MasterGui:
 
         self.usb_conn.port = config_utils.get_config("USB", "port")
         self.update_terminal(f"Try to connect {self.usb_conn.port}...")
-        
+                
         if not com_port_utils.is_com_port_available(self.usb_conn.port):
             self.update_terminal(f"COM port {self.usb_conn.port} is not available")
             return False
@@ -165,14 +165,12 @@ class MasterGui:
         result = self.connect()
         while not result:
             com_port_utils.select_port(self.master)
+            if config_utils.get_config("USB", "port") == "None":
+                self.master.destroy()
+                return
             result = self.connect()
             
-
-
-            # if messagebox.askyesno("Connection Failed", "Try to connect againnn?"):
-            #     pass
-            # else:
-            #     self.master.quit()
+            
         # Update the window title with the COM port
         self.master.title(
             f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
@@ -189,7 +187,7 @@ class MasterGui:
         ):
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
-            self.master.update_idletasks()
+            self.master.update_idletasks()  # Force update the terminal
 
     def dispatch_received_data(self, message):
         # Dispatch received data based on the current status

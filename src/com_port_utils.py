@@ -2,12 +2,20 @@ import serial.tools.list_ports
 import config_utils
 from tkinter import END, Toplevel, Listbox, SINGLE, Button, Frame, messagebox
 
+
 def refresh_ports(port_listbox):
     # Refresh the list of available COM ports
     port_listbox.delete(0, END)
     ports = list(serial.tools.list_ports.comports())
     for port in ports:
         port_listbox.insert(END, port.device)
+
+
+def quit_set_port_none(port_dialog):
+    config_utils.set_config("USB", "port", "None")
+    port_dialog.destroy()
+    pass
+
 
 def set_selected_port(port_listbox, port_dialog):
     # Set the selected COM port
@@ -49,14 +57,26 @@ def select_port(master):
     button_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
     select_button = Button(
-        button_frame, text="Connect", command=lambda: set_selected_port(port_listbox, port_dialog)
+        button_frame,
+        text="Connect",
+        command=lambda: set_selected_port(port_listbox, port_dialog),
     )
-    select_button.pack(side="left", padx=10, pady=10)
-
     refresh_button = Button(
         button_frame, text="Refresh", command=lambda: refresh_ports(port_listbox)
     )
-    refresh_button.pack(side="right", padx=10, pady=10)
+    quit_button = Button(
+        button_frame, text="Quit", command=lambda: quit_set_port_none(port_dialog)
+    )
+
+    # Use grid to align buttons in a single row with equal height
+    select_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+    refresh_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+    quit_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+
+    # Configure grid columns to have equal weight
+    button_frame.grid_columnconfigure(0, weight=1)
+    button_frame.grid_columnconfigure(1, weight=1)
+    button_frame.grid_columnconfigure(2, weight=1)
 
     port_dialog.transient(master)
     port_dialog.grab_set()
