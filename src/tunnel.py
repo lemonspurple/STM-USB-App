@@ -152,9 +152,14 @@ class TunnelApp:
             label="Limit Lo",
         )
         self.ax.set_xlim(0, self.tunnel_counts)
-        self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
+        self.ax.set_ylim(-0x8000, 0x7FFF)  # Set y-axis limit to int16_t range
         self.ax.set_xlabel("Counter")
         self.ax.set_ylabel("ADC and DAC Z")
         self.ax.set_title("Tunnel Current ADC and DAC Z")
         self.ax.legend()
+
+        # Adjust margins
+        self.fig.subplots_adjust(left=0.2, right=0.95, top=0.9, bottom=0.1)
+
+        # Redraw the canvas
         self.canvas.draw()
