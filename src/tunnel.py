@@ -113,10 +113,15 @@ class TunnelApp:
             print(f"Error: {e}, \n{message}")
             return False
 
-        self.adc_data.append(adc)
-        self.z_data.append(z)
-        self.colors.append("red" if flag == 0 else "green")
-        self.redraw_plot()
+        if flag == 0 or flag == 1:
+            self.adc_data.append(adc)
+            self.z_data.append(z)
+            self.colors.append("red" if flag == 0 else "green")
+        else:
+            self.redraw_plot()
+            self.is_active = False  # Stop the tunnel loop
+                   
+   
 
     def redraw_plot(self):
         # Clear the plot and redraw
