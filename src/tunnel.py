@@ -29,15 +29,33 @@ class TunnelApp:
 
         # Create a Back button to return to the main interface
         self.btn_back = Button(
-            self.button_frame, text="Stop", command=self.wrapper_return_to_main
+            self.button_frame, text="STOP - ESC", command=self.wrapper_return_to_main
         )
         self.btn_back.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
         # Create a Restart button to restart the TunnelApp
         self.btn_restart = Button(
-            self.button_frame, text="Restart", command=self.restart
+            self.button_frame, text="Restart - Enter", command=self.restart
         )
         self.btn_restart.grid(row=0, column=1, padx=10, pady=10, sticky="e")
+
+        # Add a Freeze button to toggle the restart loop
+        self.btn_freeze = Button(
+            self.button_frame, text="Freeze", command=self.toggle_freeze
+        )
+        self.btn_freeze.grid(row=0, column=2, padx=10, pady=10, sticky="e")
+
+        # Initialize the freeze state
+        self.is_frozen = False
+        self.after_id = None
+
+        # Bind the Enter key globally to the restart method
+        self.master.bind_all("<Return>", lambda event: self.restart())
+        # Bind the Space key globally to the restart method
+        self.master.bind_all("<space>", lambda event: self.restart())
+
+        # Bind the Escape key globally to the wrapper_return_to_main method
+        self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
 
         # Initialize the plot
         self.tunnel_counts = float(
@@ -53,7 +71,7 @@ class TunnelApp:
         self.colors = []
 
         # Start the measurement process with the read tunnelcounts value
-        self.write_command(f"TUNNEL,{int(self.tunnel_counts)}")
+        self.write_command(f"TUNNEL,{int(abs(self.tunnel_counts))}")
 
     def update_adc_limits(self, target_adc, limit_adc):
         self.target_adc = target_adc
@@ -76,13 +94,26 @@ class TunnelApp:
             self.target_adc,
             self.tolerance_adc,
         )
-        print(f"Tolerance ADC: {self.tolerance_adc}")
+        # print(f"Tolerance ADC: {self.tolerance_adc}")
 
     def clear_plot_data(self):
         # Clear the plot data
         self.adc_data = []
         self.z_data = []
         self.colors = []
+
+    def toggle_freeze(self):
+        # Toggle the freeze state
+        self.is_frozen = not self.is_frozen
+        print(f"Freeze state toggled. is_frozen: {self.is_frozen}")  # Debugging
+        if self.is_frozen:
+            self.btn_freeze.config(text="Unfreeze")
+            # Cancel the scheduled restart if it exists
+            if self.after_id is not None:
+                self.master.after_cancel(self.after_id)
+                self.after_id = None  # Reset the after_id
+        else:
+            self.btn_freeze.config(text="Freeze")
 
     def update_data(self, message):
         if not hasattr(self, "adc_plot"):
@@ -107,6 +138,12 @@ class TunnelApp:
         try:
             if data[0] == "TUNNEL":
                 flag, adc, z = int(data[1]), int(data[2]), int(data[3])
+
+                # Convert adc to signed 16-bit integer
+                if (
+                    adc > 0x7FFF
+                ):  # If adc is greater than the max positive value for int16
+                    adc -= 0x10000  # Convert to signed value
             else:
                 return False
         except Exception as e:
@@ -120,8 +157,13 @@ class TunnelApp:
         else:
             self.redraw_plot()
             self.is_active = False  # Stop the tunnel loop
-                   
-   
+
+            # Wait for 2 seconds, then restart the tunnel loop if not frozen
+            if not self.is_frozen:  # Check if the loop is frozen
+                print("Restarting tunnel loop...")  # Debugging
+                self.after_id = self.master.after(500, self.restart)
+            else:
+                print("Tunnel loop is frozen. Restart skipped.")  # Debugging
 
     def redraw_plot(self):
         # Clear the plot and redraw
@@ -157,7 +199,7 @@ class TunnelApp:
             label="Limit Lo",
         )
         self.ax.set_xlim(0, self.tunnel_counts)
-        self.ax.set_ylim(-0x8000, 0x7FFF)  # Set y-axis limit to int16_t range
+        self.ax.set_ylim(-1000, 0xFFFF)  # Set y-axis limit to int16_t range
         self.ax.set_xlabel("Counter")
         self.ax.set_ylabel("ADC and DAC Z")
         self.ax.set_title("Tunnel Current ADC and DAC Z")

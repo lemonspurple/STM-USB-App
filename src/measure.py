@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.animation as animation
 
+
 class MeasureApp:
     def __init__(self, master, write_command, return_to_main):
         # Initialize MeasureApp with callbacks and settings
@@ -17,17 +18,21 @@ class MeasureApp:
         self.frame.pack()
 
         # Create a Back button to return to the main interface
-        self.btn_back = Button(self.frame, text="Stop", command=self.wrapper_return_to_main)
+        self.btn_back = Button(
+            self.frame, text="Stop - ESC", command=self.wrapper_return_to_main
+        )
         self.btn_back.pack(pady=10)
 
         # Create a Reset Rotation button to reset the 3D plot rotation
-        self.btn_reset_rotation = Button(self.frame, text="Reset Rotation", command=self.reset_rotation)
+        self.btn_reset_rotation = Button(
+            self.frame, text="Reset Rotation", command=self.reset_rotation
+        )
         self.btn_reset_rotation.pack(pady=10)
         self.btn_reset_rotation.pack_forget()  # Initially hide the Reset Rotation button
 
         # Initialize the 3D plot
         self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.ax = self.fig.add_subplot(111, projection="3d")
         self.x_data = []
         self.y_data = []
         self.z_data = []
@@ -39,11 +44,16 @@ class MeasureApp:
         # Embed the plot in a Tkinter canvas
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        self.canvas.mpl_connect('motion_notify_event', self.on_plot_hover)  # Connect the hover event
+        self.canvas.mpl_connect(
+            "motion_notify_event", self.on_plot_hover
+        )  # Connect the hover event
         self.redraw_plot()
 
         # Start the measurement process
         self.write_command("MEASURE")
+
+        # Bind the Escape key globally to the wrapper_return_to_main method
+        self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
 
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
@@ -73,14 +83,16 @@ class MeasureApp:
         self.ax.set_ylim(0, 200)
         self.ax.set_zlim(0, 0xFFFF)
         self.ax.plot(self.x_data, self.y_data, self.z_data)
-        self.ax.set_xlabel('X')  
-        self.ax.set_ylabel('Y')  
-        self.ax.set_zlabel('Z')
+        self.ax.set_xlabel("X")
+        self.ax.set_ylabel("Y")
+        self.ax.set_zlabel("Z")
         self.canvas.draw()
 
     def reset_rotation(self):
         # Reset the rotation of the 3D plot to its initial state
-        self.ax.view_init(elev=self.initial_elev, azim=self.initial_azim)  # Reset to initial elevation and azimuthal angles
+        self.ax.view_init(
+            elev=self.initial_elev, azim=self.initial_azim
+        )  # Reset to initial elevation and azimuthal angles
         self.canvas.draw()
         self.btn_reset_rotation.pack_forget()  # Hide the Reset Rotation button after resetting
 

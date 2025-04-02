@@ -94,6 +94,7 @@ class MasterGui:
         self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
         self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
         self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
+        
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -211,6 +212,20 @@ class MasterGui:
                 if self.parameter_app:
                     self.parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
+                
+                adc_value = int(ms[2])
+                if (
+                    adc_value > 0x7FFF
+                ):  # If greater than the max positive value for int16
+                    adc_value -= 0x10000  # Convert to signed value
+                ms[2] = str(adc_value)
+                msg = ",".join(ms)
+                
+                
+                
+                
+                
+                
                 self.update_terminal(msg)
                 if self.tunnel_app:
                     self.tunnel_app.update_data(msg)

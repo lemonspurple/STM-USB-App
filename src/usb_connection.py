@@ -83,7 +83,7 @@ class USBConnection:
 
                 if lines:
                     self.dispatcher_callback("\n".join(lines))
-            time.sleep(0.0001)
+            time.sleep(0.00001)
 
     def stop_read_queue(self):
         # Stop the read queue loop

@@ -296,7 +296,7 @@ class TunnelApp:
             self.target_adc,
             self.tolerance_adc,
         )
-        print(f"Tolerance ADC: {self.tolerance_adc}")
+        #print(f"Tolerance ADC: {self.tolerance_adc}")
 
     def clear_plot_data(self):
         # Clear the plot data
