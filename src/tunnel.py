@@ -33,26 +33,15 @@ class TunnelApp:
         )
         self.btn_back.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
-        # Create a Restart button to restart the TunnelApp
-        self.btn_restart = Button(
-            self.button_frame, text="Restart - Enter", command=self.restart
-        )
-        self.btn_restart.grid(row=0, column=1, padx=10, pady=10, sticky="e")
-
         # Add a Freeze button to toggle the restart loop
         self.btn_freeze = Button(
-            self.button_frame, text="Freeze", command=self.toggle_freeze
+            self.button_frame, text="Stop", command=self.toggle_freeze
         )
-        self.btn_freeze.grid(row=0, column=2, padx=10, pady=10, sticky="e")
+        self.btn_freeze.grid(row=0, column=1, padx=10, pady=10, sticky="e")
 
         # Initialize the freeze state
         self.is_frozen = False
         self.after_id = None
-
-        # Bind the Enter key globally to the restart method
-        self.master.bind_all("<Return>", lambda event: self.restart())
-        # Bind the Space key globally to the restart method
-        self.master.bind_all("<space>", lambda event: self.restart())
 
         # Bind the Escape key globally to the wrapper_return_to_main method
         self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
@@ -94,7 +83,6 @@ class TunnelApp:
             self.target_adc,
             self.tolerance_adc,
         )
-        # print(f"Tolerance ADC: {self.tolerance_adc}")
 
     def clear_plot_data(self):
         # Clear the plot data
@@ -107,13 +95,15 @@ class TunnelApp:
         self.is_frozen = not self.is_frozen
         print(f"Freeze state toggled. is_frozen: {self.is_frozen}")  # Debugging
         if self.is_frozen:
-            self.btn_freeze.config(text="Unfreeze")
+            self.btn_freeze.config(text="Run")
             # Cancel the scheduled restart if it exists
             if self.after_id is not None:
                 self.master.after_cancel(self.after_id)
                 self.after_id = None  # Reset the after_id
         else:
-            self.btn_freeze.config(text="Freeze")
+            self.btn_freeze.config(text="Stop")
+            # Restart the loop when unfreezing
+            self.restart()
 
     def update_data(self, message):
         if not hasattr(self, "adc_plot"):
@@ -164,6 +154,8 @@ class TunnelApp:
                 self.after_id = self.master.after(500, self.restart)
             else:
                 print("Tunnel loop is frozen. Restart skipped.")  # Debugging
+                # Update the button text to "Run" after the loop finishes
+                self.btn_freeze.config(text="Run")
 
     def redraw_plot(self):
         # Clear the plot and redraw
