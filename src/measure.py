@@ -1,8 +1,10 @@
+import os
+from datetime import datetime
 from tkinter import Frame, Button
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.animation as animation
+from matplotlib import cm  # Import colormap utilities
 
 
 class MeasureApp:
@@ -52,6 +54,20 @@ class MeasureApp:
         # Start the measurement process
         self.write_command("MEASURE")
 
+        # Create the measurements folder if it doesn't exist
+        measurements_folder = os.path.join(os.getcwd(), "measurements")
+        os.makedirs(measurements_folder, exist_ok=True)
+
+        # Generate a filename based on the current date and time
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.measurement_file_path = os.path.join(
+            measurements_folder, f"measurement_{timestamp}.csv"
+        )
+
+        # # Open the file for writing and add a header
+        # with open(self.measurement_file_path, "w") as file:
+        #     file.write("X,Y,Z\n")  # Example header for CSV data
+
         # Bind the Escape key globally to the wrapper_return_to_main method
         self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
 
@@ -69,6 +85,11 @@ class MeasureApp:
             print(f"Error: {e}, \n{message}")
             return False
 
+        # Append the data to the file
+        with open(self.measurement_file_path, "a") as file:
+            file.write(f"{x},{y},{z}\n")
+
+        # Update the plot
         self.x_data.append(x)
         self.y_data.append(y)
         self.z_data.append(z)
@@ -82,7 +103,14 @@ class MeasureApp:
         self.ax.set_xlim(0, 200)
         self.ax.set_ylim(0, 200)
         self.ax.set_zlim(0, 0xFFFF)
-        self.ax.plot(self.x_data, self.y_data, self.z_data)
+
+        # Use a colormap to assign colors based on z_data values
+        if self.z_data:
+            colors = cm.viridis(
+                [z / 0xFFFF for z in self.z_data]
+            )  # Normalize z_data to [0, 1]
+            self.ax.scatter(self.x_data, self.y_data, self.z_data, c=colors, marker="o")
+
         self.ax.set_xlabel("X")
         self.ax.set_ylabel("Y")
         self.ax.set_zlabel("Z")
