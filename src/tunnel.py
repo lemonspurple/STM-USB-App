@@ -100,8 +100,12 @@ class TunnelApp:
             if self.after_id is not None:
                 self.master.after_cancel(self.after_id)
                 self.after_id = None  # Reset the after_id
+            # Show the "STOP - ESC" button when the loop is stopped
+            self.btn_back.grid()
         else:
             self.btn_freeze.config(text="Stop")
+            # Hide the "STOP - ESC" button while the loop is running
+            self.btn_back.grid_remove()
             # Restart the loop when unfreezing
             self.restart()
 
@@ -154,7 +158,8 @@ class TunnelApp:
                 self.after_id = self.master.after(500, self.restart)
             else:
                 print("Tunnel loop is frozen. Restart skipped.")  # Debugging
-                # Update the button text to "Run" after the loop finishes
+                # Show the "STOP - ESC" button only when the loop is stopped
+                self.btn_back.grid()
                 self.btn_freeze.config(text="Run")
 
     def redraw_plot(self):
