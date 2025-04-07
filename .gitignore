@@ -58,4 +58,10 @@ dmypy.json
 Thumbs.db
 ehthumbs.db
 
+# Ignore all files in the measurements folder inside src/dist
+src/dist/measurements/*
+
+measurement_*
+
 measurements/*
+

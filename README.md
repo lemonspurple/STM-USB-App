@@ -47,6 +47,11 @@ tkinter-usb-app
 - The MEASURE functionality allows you to perform measurement tasks and view real-time data.
 - The ADJUST functionality provides controls for adjusting parameters as needed.
 
+## Create .exe
+```
+pyinstaller --onefile --windowed --add-data "config.ini;." --add-data "assets/icons/stm_symbol.ico;assets/icons" main.py
+```
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for more details.
