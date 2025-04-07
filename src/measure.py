@@ -5,6 +5,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import cm  # Import colormap utilities
+import numpy as np
+from scipy.interpolate import griddata
 
 
 class MeasureApp:
@@ -97,6 +99,16 @@ class MeasureApp:
         if x == 0:
             self.redraw_plot()
 
+    # C:\Users\peter\500-STM-VIEWER\STM_viewer.py
+    # def plot_3d_data(x, y, z, ax, plot_file_name):
+    # """Plot the 3D data on the given axis."""
+    #     ax.clear()
+    #     ax.set_xlabel("X")
+    #     ax.set_ylabel("Y")
+    #     ax.set_zlabel("Z")
+    #     ax.set_title(plot_file_name)
+    #     ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
+
     def redraw_plot(self):
         # Clear the plot and redraw
         self.ax.clear()
@@ -104,17 +116,19 @@ class MeasureApp:
         self.ax.set_ylim(0, 200)
         self.ax.set_zlim(0, 0xFFFF)
 
-        # Use a colormap to assign colors based on z_data values
-        if self.z_data:
-            colors = cm.viridis(
-                [z / 0xFFFF for z in self.z_data]
-            )  # Normalize z_data to [0, 1]
-            self.ax.scatter(self.x_data, self.y_data, self.z_data, c=colors, marker="o")
+        # Check if there is enough data to create a surface
+        if len(self.x_data) > 2 and len(self.y_data) > 2 and len(self.z_data) > 2:
+            # Prepare data for the 3D plot
+            x = np.array(self.x_data)
+            y = np.array(self.y_data)
+            z = np.array(self.z_data)
 
-        self.ax.set_xlabel("X")
-        self.ax.set_ylabel("Y")
-        self.ax.set_zlabel("Z")
+            # Plot the triangular surface with the new data
+            self.ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
+
+        # Redraw the canvas and flush the events to update the display
         self.canvas.draw()
+        self.canvas.flush_events()
 
     def reset_rotation(self):
         # Reset the rotation of the 3D plot to its initial state

@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets/icons/stm_symbol.ico', 'assets/icons'), ('config.ini', '.')],
+    datas=[('assets/icons/stm_symbol.ico', 'assets/icons')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
