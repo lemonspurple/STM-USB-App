@@ -1,4 +1,5 @@
 import time
+import threading
 from tkinter import (
     Tk,
     Frame,
@@ -24,9 +25,72 @@ import config_utils
 import os
 import sys
 import com_port_utils  # Import the com_port_utils module
+import msvcrt
+import atexit
+
 
 # Define the global STATUS variable
 STATUS = "INIT"
+
+lock_handle = None
+running = True
+
+
+def prevent_multiple_instances():
+    global lock_handle
+    lock_file = (
+        os.path.join(os.path.dirname(sys.executable), "app.lock")
+        if hasattr(sys, "_MEIPASS")
+        else "app.lock"
+    )
+    lock_handle = open(lock_file, "w")
+    try:
+        msvcrt.locking(lock_handle.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        print("Another instance of the application is already running.")
+        sys.exit(1)
+
+    # Register a cleanup function to delete the lock file on exit
+    atexit.register(delete_lock_file, lock_file)
+
+
+def delete_lock_file(lock_file):
+    global lock_handle
+    try:
+        if lock_handle:
+            msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)  # Unlock the file
+            lock_handle.close()
+            lock_handle = None  # Set to None after closing
+        if os.path.exists(lock_file):
+            os.remove(lock_file)  # Delete the lock file
+        print("Lock file deleted.")
+    except Exception as e:
+        print(f"Error deleting lock file: {e}")
+
+
+def cleanup_tasks():
+    global running, lock_handle
+    running = False  # Signal the thread to stop
+    print("Cleaning up tasks...")
+
+
+    if lock_handle:  # Only unlock and close if not already handled
+        msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
+        lock_handle.close()
+        lock_handle = None  # Set to None after closing
+    print("FOO All tasks closed.")
+    # esp_api_client.close_usb_connection()  # Uncommented to close USB connection
+
+
+def on_close():
+    print("FOO send STOP")
+    try:
+        esp_api_client.usb_conn.write_command("STOP")
+    except Exception as e:
+        print(f"Error sending STOP command: {e}")
+    
+    cleanup_tasks()  # Cleanup tasks, including stopping threads
+    root.destroy()  # Destroy the Tkinter window
 
 
 class MasterGui:
@@ -94,7 +158,6 @@ class MasterGui:
         self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
         self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
         self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
-        
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -133,8 +196,9 @@ class MasterGui:
         global STATUS
 
         self.usb_conn.port = config_utils.get_config("USB", "port")
+
         self.update_terminal(f"Try to connect {self.usb_conn.port}...")
-                
+
         if not com_port_utils.is_com_port_available(self.usb_conn.port):
             self.update_terminal(f"COM port {self.usb_conn.port} is not available")
             return False
@@ -161,8 +225,14 @@ class MasterGui:
 
     def try_to_connect(self):
         # Try to establish a connection and select port if it fails
+        self.update_terminal(
+            f"FOO Config file path: {config_utils.config_file}"
+        )  # Show config.ini path
+        if os.path.exists(config_utils.config_file):
+            self.update_terminal("Config file exists.")
+        else:
+            self.update_terminal("Config file does not exist.")
 
-        
         result = self.connect()
         while not result:
             com_port_utils.select_port(self.master)
@@ -170,8 +240,7 @@ class MasterGui:
                 self.master.destroy()
                 return
             result = self.connect()
-            
-            
+
         # Update the window title with the COM port
         self.master.title(
             f"500 EUR RTM - {self.usb_conn.port} {self.usb_conn.baudrate} baud"
@@ -212,7 +281,7 @@ class MasterGui:
                 if self.parameter_app:
                     self.parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
-                
+
                 adc_value = int(ms[2])
                 if (
                     adc_value > 0x7FFF
@@ -220,12 +289,7 @@ class MasterGui:
                     adc_value -= 0x10000  # Convert to signed value
                 ms[2] = str(adc_value)
                 msg = ",".join(ms)
-                
-                
-                
-                
-                
-                
+
                 self.update_terminal(msg)
                 if self.tunnel_app:
                     self.tunnel_app.update_data(msg)
@@ -403,12 +467,18 @@ class MasterGui:
 
 
 if __name__ == "__main__":
+    prevent_multiple_instances()
+
     root = Tk()
     style = ttk.Style(root)
     style.theme_use("default")  # Use a simple theme
     style.configure("Thin.Horizontal.TProgressbar", thickness=10)  # Set the thickness
 
     esp_api_client = MasterGui(root)
-    root.protocol("WM_DELETE_WINDOW", esp_api_client.on_closing)
+    
+    root.protocol("WM_DELETE_WINDOW", on_close)
     root.after(100, esp_api_client.try_to_connect)
     root.mainloop()
+
+    # # Ensure the thread is stopped
+    # thread.join()

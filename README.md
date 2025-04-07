@@ -49,7 +49,7 @@ tkinter-usb-app
 
 ## Create .exe
 ```
-pyinstaller --onefile --windowed --add-data "config.ini;." --add-data "assets/icons/stm_symbol.ico;assets/icons" main.py
+pyinstaller --name "rtm500" --onefile --windowed --add-data "assets/icons/stm_symbol.ico;assets/icons" main.py
 ```
 
 ## License
