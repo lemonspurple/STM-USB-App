@@ -1,12 +1,10 @@
 import os
 from datetime import datetime
 from tkinter import Frame, Button
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import cm  # Import colormap utilities
 import numpy as np
-from scipy.interpolate import griddata
 
 
 class MeasureApp:
@@ -66,10 +64,6 @@ class MeasureApp:
             measurements_folder, f"measurement_{timestamp}.csv"
         )
 
-        # # Open the file for writing and add a header
-        # with open(self.measurement_file_path, "w") as file:
-        #     file.write("X,Y,Z\n")  # Example header for CSV data
-
         # Bind the Escape key globally to the wrapper_return_to_main method
         self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
 
@@ -98,16 +92,6 @@ class MeasureApp:
 
         if x == 0:
             self.redraw_plot()
-
-    # C:\Users\peter\500-STM-VIEWER\STM_viewer.py
-    # def plot_3d_data(x, y, z, ax, plot_file_name):
-    # """Plot the 3D data on the given axis."""
-    #     ax.clear()
-    #     ax.set_xlabel("X")
-    #     ax.set_ylabel("Y")
-    #     ax.set_zlabel("Z")
-    #     ax.set_title(plot_file_name)
-    #     ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
 
     def redraw_plot(self):
         # Clear the plot and redraw
@@ -142,13 +126,3 @@ class MeasureApp:
         # Show the Reset Rotation button only if the plot has been rotated
         if self.ax.elev != self.initial_elev or self.ax.azim != self.initial_azim:
             self.btn_reset_rotation.pack(pady=10)
-
-    def animate(self, i):
-        # Animation function to update the plot
-        self.ax.clear()
-        self.ax.plot(self.x_data, self.y_data, self.z_data)
-
-    def show_plot(self):
-        # Show the plot in a separate window
-        ani = animation.FuncAnimation(self.fig, self.animate, interval=100)
-        plt.show()
