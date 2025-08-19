@@ -73,7 +73,6 @@ def cleanup_tasks():
     running = False  # Signal the thread to stop
     print("Cleaning up tasks...")
 
-
     if lock_handle:  # Only unlock and close if not already handled
         msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
         lock_handle.close()
@@ -82,15 +81,15 @@ def cleanup_tasks():
     # esp_api_client.close_usb_connection()  # Uncommented to close USB connection
 
 
-def on_close():
-    print("FOO send STOP")
+def global_on_close():
+    print("on_close: Function triggered")
+    print("FOO send STOP #########################")
     try:
         esp_api_client.usb_conn.write_command("STOP")
     except Exception as e:
         print(f"Error sending STOP command: {e}")
-    
-    cleanup_tasks()  # Cleanup tasks, including stopping threads
-    root.destroy()  # Destroy the Tkinter window
+    cleanup_tasks()
+    root.destroy()
 
 
 class MasterGui:
@@ -219,7 +218,7 @@ class MasterGui:
             time.sleep(0.1)
             if time.time() - start_time > 1:
                 return False
-
+        time.sleep(0.1)
         STATUS = "IDLE"
         return True
 
@@ -475,10 +474,11 @@ if __name__ == "__main__":
     style.configure("Thin.Horizontal.TProgressbar", thickness=10)  # Set the thickness
 
     esp_api_client = MasterGui(root)
-    
-    root.protocol("WM_DELETE_WINDOW", on_close)
-    root.after(100, esp_api_client.try_to_connect)
-    root.mainloop()
 
-    # # Ensure the thread is stopped
-    # thread.join()
+    print("Binding WM_DELETE_WINDOW to on_close")
+    root.protocol("WM_DELETE_WINDOW", global_on_close)
+    root.after(100, esp_api_client.try_to_connect)
+
+    print("Program is running...")
+    root.mainloop()
+    print("Program exited root.mainloop()")

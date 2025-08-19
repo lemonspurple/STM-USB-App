@@ -20,7 +20,7 @@ class USBConnection:
         self.running = False
         self.receive_running = False
         self.port = config_utils.get_config("USB", "port")
-        self.baudrate = config_utils.get_config("USB", "baudrate")
+        self.baudrate = config_utils.get_config("USB", "baudrate") or 460800
 
     def establish_connection(self):
         try:
