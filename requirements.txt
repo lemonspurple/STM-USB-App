@@ -21,5 +21,4 @@ pywin32-ctypes==0.2.3
 scipy==1.15.2
 setuptools==75.8.0
 six==1.17.0
-tkinter-usb-app @ file:///C:/Users/peter/500-GUI-MODULES/tkinter-usb-app
 wheel==0.45.1
