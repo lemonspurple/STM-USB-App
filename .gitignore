@@ -1,6 +1,6 @@
 build/
 tkinter_usb_app.egg-info/
-config.ini
+# config.ini
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
