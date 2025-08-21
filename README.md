@@ -31,7 +31,20 @@ tkinter-usb-app
    cd tkinter-usb-app
    ```
 
-2. Install the required dependencies:
+
+2. (Recommended) Create and activate a virtual environment named .venv:
+   On Windows:
+   ```
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
+   On macOS/Linux:
+   ```
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. Install the required dependencies:
    ```
    pip install -r requirements.txt
    ```
