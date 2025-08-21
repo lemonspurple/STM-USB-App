@@ -60,16 +60,7 @@ code .
 ```
 ## Run the Program
 
-Change to the `src` directory, open `main.py` in Visual Studio Code, and click the **Run** button to start the application.
-
-
-**Hint:**
-If you encounter issues with the serial connection or see errors related to `SerialException`, it may be necessary to clean your pyserial installation. Run the following commands:
-
-```
-pip uninstall -y serial
-pip uninstall -y pyserial && pip install pyserial
-```
+Select `main.py` in `src` folder . Click the **Run** button (Run Python File) to start the application.
 
 ## Usage Guidelines
 
