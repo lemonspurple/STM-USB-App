@@ -1,13 +1,6 @@
 # Tkinter USB App
 
-This project is a Tkinter-based application designed to establish a USB connection with an ESP32 device. It allows users to choose between two main functionalities: MEASURE and ADJUST. The application provides real-time feedback from the ESP32 and offers a user-friendly interface for managing tasks.
-
-
-## Features
-
-- Establishes a USB connection with an ESP32 device.
-- Real-time display of responses from the ESP32.
-- User can select between MEASURE, ADJUST, PARAMETER and Tools functionalities.
+This project is a Tkinter-based application designed to establish a USB connection with the ESP32 device on 500 EURO RTM. 
 
 
 ## Setup Instructions
@@ -16,24 +9,26 @@ This project is a Tkinter-based application designed to establish a USB connecti
    ```
    cd 500_RTM
    git clone https://github.com/PeterDirnhofer/tkinter-usb-app.git
-   cd tkinter-usb-app
    ```
 
 
 2. Create and activate a virtual environment named .venv:
-   On Windows:
-   ```
+   **On Windows:**
+   ```sh
+   cd tkinter-usb-app
    python -m venv .venv
    .venv\Scripts\activate
    ```
-   On macOS/Linux:
-   ```
+
+   **On macOS/Linux:**
+   ```sh
+   cd tkinter-usb-app
    python3 -m venv .venv
    source .venv/bin/activate
    ```
 
-3. Install the required dependencies into environment:
-   ```
+3. Install the required dependencies (make sure your environment is activated):
+   ```sh
    pip install -r requirements.txt
    ```
 
@@ -46,6 +41,7 @@ This project is a Tkinter-based application designed to establish a USB connecti
 From your project directory, open the `tkinter-usb-app` folder in Visual Studio Code by running:
 
 ```sh
+cd tkinter-usb-app
 code .
 ```
 
