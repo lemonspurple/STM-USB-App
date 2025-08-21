@@ -1,6 +1,6 @@
 # Tkinter USB App 500 EUR RTM
 
-This project is a Tkinter-based application designed to establish a USB connection with the ESP32 device on 500 EURO RTM. 
+With this app, the 500 EUR RTM is controlled via USB.
 
 
 ## Setup Instructions
