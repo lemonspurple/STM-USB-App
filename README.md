@@ -45,6 +45,10 @@ To open the `tkinter-usb-app` folder in Visual Studio Code, run the following co
 cd tkinter-usb-app
 code .
 ```
+## Run the Program
+
+Change to the `src` directory, open `main.py` in Visual Studio Code, and click the **Run** button to start the application.
+
 
 **Hint:**
 If you encounter issues with the serial connection or see errors related to `SerialException`, it may be necessary to clean your pyserial installation. Run the following commands:
