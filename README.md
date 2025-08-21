@@ -24,8 +24,9 @@ tkinter-usb-app
 
 ## Setup Instructions
 
-1. Clone the repository:
+1. Clone the repository into folder 500_RTM:
    ```
+   cd 500_RTM
    git clone https://github.com/PeterDirnhofer/tkinter-usb-app.git
    cd tkinter-usb-app
    ```
