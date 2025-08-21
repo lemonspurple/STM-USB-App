@@ -46,6 +46,14 @@ cd tkinter-usb-app
 code .
 ```
 
+**Hint:**
+If you encounter issues with the serial connection or see errors related to `SerialException`, it may be necessary to clean your pyserial installation. Run the following commands:
+
+```
+pip uninstall -y serial
+pip uninstall -y pyserial && pip install pyserial
+```
+
 ## Usage Guidelines
 
 - Upon starting the application, it will attempt to establish a USB connection with the ESP32.

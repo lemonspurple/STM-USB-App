@@ -1,5 +1,6 @@
 import time
 import serial
+from serial import SerialException
 import queue
 import threading
 import serial.tools.list_ports
@@ -29,7 +30,7 @@ class USBConnection:
             )
             self.is_connected = True
             return True
-        except serial.SerialException as e:
+        except SerialException as e:
             self.is_connected = False
             return False
 
@@ -55,7 +56,7 @@ class USBConnection:
             except serial.SerialTimeoutException as e:
                 self.update_terminal(f"Timeout error sending command: {e}")
                 print(f"ERROR write_command timeout {e}")
-            except serial.SerialException as e:
+            except SerialException as e:
                 self.update_terminal(f"Error sending command: {e}")
                 print(f"ERROR write_command {e}")
         else:
