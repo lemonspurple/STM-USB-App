@@ -35,10 +35,15 @@ tkinter-usb-app
    pip install -r requirements.txt
    ```
 
-3. Run the application:
-   ```
-   python src/main.py
-   ```
+
+## Open the Project in Visual Studio Code
+
+To open the `tkinter-usb-app` folder in Visual Studio Code, run the following command in your terminal:  from the project directory:
+
+```
+cd tkinter-usb-app
+code .
+```
 
 ## Usage Guidelines
 
