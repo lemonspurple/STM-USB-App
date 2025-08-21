@@ -26,7 +26,7 @@ tkinter-usb-app
 
 1. Clone the repository:
    ```
-   git clone [https://github.com/yourusername/tkinter-usb-app.git](https://github.com/PeterDirnhofer/tkinter-usb-app.git)
+   git clone https://github.com/PeterDirnhofer/tkinter-usb-app.git
    cd tkinter-usb-app
    ```
 
