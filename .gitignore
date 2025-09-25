@@ -64,4 +64,5 @@ src/dist/measurements/*
 measurement_*
 
 measurements/*
+app.lock
 
