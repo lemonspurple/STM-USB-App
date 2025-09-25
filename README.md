@@ -1,26 +1,7 @@
-# Tkinter USB App
+# Tkinter USB App 500 EUR RTM
 
-This project is a Tkinter-based application designed to establish a USB connection with an ESP32 device. It allows users to choose between two main functionalities: MEASURE and ADJUST. The application provides real-time feedback from the ESP32 and offers a user-friendly interface for managing tasks.
+With this app, the 500 EUR RTM is controlled via USB.
 
-## Project Structure
-
-```
-tkinter-usb-app
-├── src
-│   ├── main.py          # Entry point of the application
-│   ├── measure.py       # GUI for MEASURE functionality
-│   ├── adjust.py        # GUI for ADJUST functionality
-│   └── usb_connection.py # Manages USB connection to ESP32
-├── requirements.txt     # Lists project dependencies
-└── README.md            # Documentation for the project
-```
-
-## Features
-
-- Establishes a USB connection with an ESP32 device.
-- Real-time display of responses from the ESP32.
-- User can select between MEASURE and ADJUST functionalities.
-- Modular design with separate files for different functionalities.
 
 ## Setup Instructions
 
@@ -28,60 +9,61 @@ tkinter-usb-app
    ```
    cd 500_RTM
    git clone https://github.com/PeterDirnhofer/tkinter-usb-app.git
+   ```
+
+
+2. Create and activate a virtual environment named .venv:
+   **On Windows:**
+   ```sh
    cd tkinter-usb-app
-   ```
-
-
-2. (Recommended) Create and activate a virtual environment named .venv:
-   On Windows:
-   ```
    python -m venv .venv
    .venv\Scripts\activate
    ```
-   On macOS/Linux:
-   ```
+
+   **On macOS/Linux:**
+   ```sh
+   cd tkinter-usb-app
    python3 -m venv .venv
    source .venv/bin/activate
    ```
 
-3. Install the required dependencies:
-   ```
+3. Install the required dependencies (make sure your environment is activated):
+   ```sh
    pip install -r requirements.txt
    ```
 
 
-## Open the Project in Visual Studio Code
+## Run the Project in Visual Studio Code
 
-To open the `tkinter-usb-app` folder in Visual Studio Code, run the following command in your terminal:  from the project directory:
 
-```
+### Open the Project in Visual Studio Code
+
+From your project directory, open the `tkinter-usb-app` folder in Visual Studio Code by running:
+
+```sh
 cd tkinter-usb-app
 code .
 ```
+
+> **Note:** Be sure to use `code .` (with the dot) to open the current folder in VS Code. Using only `code` will not open the folder as a project.
+
 ## Run the Program
 
-Change to the `src` directory, open `main.py` in Visual Studio Code, and click the **Run** button to start the application.
-
-
-**Hint:**
-If you encounter issues with the serial connection or see errors related to `SerialException`, it may be necessary to clean your pyserial installation. Run the following commands:
-
-```
-pip uninstall -y serial
-pip uninstall -y pyserial && pip install pyserial
-```
+Select `main.py` in `src` folder . Click the **Run** button (Run Python File) to start the application.
 
 ## Usage Guidelines
 
-- Upon starting the application, it will attempt to establish a USB connection with the ESP32.
-- If the connection is successful and the ESP32 responds with "IDLE", you can choose between MEASURE and ADJUST.
-- The MEASURE functionality allows you to perform measurement tasks and view real-time data.
-- The ADJUST functionality provides controls for adjusting parameters as needed.
+- When you start the application, it will automatically attempt to establish a USB connection with the ESP32 device.
+- If the connection is successful and the ESP32 responds with **"IDLE"**, you can select from the following main functionalities:
+   - **Measure:** Perform measurement tasks and view real-time data from the device.
+   - **Parameter:** Access controls for adjusting device parameters as needed.
+   - **Tools:** Access additional utilities for device management and diagnostics, such as:
+      - Manually set Hardware DACs and read ADC
+      - Make DACs to output a sinus
+      - **Init Tunnel Current:** Set DAC Z to establish  tunnel contact.
+      - **Show Measurement During Tunnel Contact:** Display real-time measurement data as the device establishes tunnel contact.
 
-## Create .exe
-```
-pyinstaller --name "rtm500" --onefile --windowed --add-data "assets/icons/stm_symbol.ico;assets/icons" main.py
-```
+
 
 ## License
 
