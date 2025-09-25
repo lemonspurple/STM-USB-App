@@ -157,6 +157,9 @@ class MasterGui:
         self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
         self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
         self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
+        self.tools_menu.add_command(
+            label="Tunnel simulate", command=self.open_tunnel_simulate
+        )
 
         # Create a frame to hold the terminal and scrollbar
         self.terminal_frame = Frame(self.master)
@@ -353,6 +356,24 @@ class MasterGui:
             return_to_main=self.return_to_main,
             target_adc=self.target_adc,
             tolerance_adc=self.tolerance_adc,
+        )
+        self.disable_menu()
+
+    def open_tunnel_simulate(self):
+        # Open the TUNNEL SIMULATE interface
+        global STATUS
+        STATUS = "TUNNEL_SIMULATE"
+
+        for widget in self.app_frame.winfo_children():
+            widget.destroy()
+
+        self.tunnel_app = TunnelApp(
+            master=self.app_frame,
+            write_command=self.usb_conn.write_command,
+            return_to_main=self.return_to_main,
+            target_adc=self.target_adc,
+            tolerance_adc=self.tolerance_adc,
+            simulate=True,
         )
         self.disable_menu()
 

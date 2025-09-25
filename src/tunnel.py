@@ -8,7 +8,13 @@ import sys
 
 class TunnelApp:
     def __init__(
-        self, master, write_command, return_to_main, target_adc, tolerance_adc
+        self,
+        master,
+        write_command,
+        return_to_main,
+        target_adc,
+        tolerance_adc,
+        simulate=False,
     ):
 
         # Initialize TunnelApp with callbacks and settings
@@ -18,6 +24,7 @@ class TunnelApp:
         self.is_active = True
         self.target_adc = target_adc
         self.tolerance_adc = tolerance_adc
+        self.simulate = simulate
 
         # Create a frame to hold the widgets
         self.frame = Frame(master)
@@ -60,7 +67,10 @@ class TunnelApp:
         self.colors = []
 
         # Start the measurement process with the read tunnelcounts value
-        self.write_command(f"TUNNEL,{int(abs(self.tunnel_counts))}")
+        if self.simulate:
+            self.write_command(f"TUNNEL SIMULATE,{int(abs(self.tunnel_counts))}")
+        else:
+            self.write_command(f"TUNNEL,{int(abs(self.tunnel_counts))}")
 
     def update_adc_limits(self, target_adc, limit_adc):
         self.target_adc = target_adc
@@ -82,6 +92,7 @@ class TunnelApp:
             self.return_to_main,
             self.target_adc,
             self.tolerance_adc,
+            self.simulate,
         )
 
     def clear_plot_data(self):
