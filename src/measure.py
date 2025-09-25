@@ -8,12 +8,13 @@ import numpy as np
 
 
 class MeasureApp:
-    def __init__(self, master, write_command, return_to_main):
+    def __init__(self, master, write_command, return_to_main, simulate=False):
         # Initialize MeasureApp with callbacks and settings
         self.master = master
         self.write_command = write_command
         self.return_to_main = return_to_main
         self.is_active = True
+        self.simulate = simulate
 
         # Create a frame to hold the widgets
         self.frame = Frame(master)
@@ -52,7 +53,10 @@ class MeasureApp:
         self.redraw_plot()
 
         # Start the measurement process
-        self.write_command("MEASURE")
+        if not self.simulate:
+            self.write_command("MEASURE SIMULATE")
+        else:
+            self.write_command("MEASURE")
 
         # Create the measurements folder if it doesn't exist
         measurements_folder = os.path.join(os.getcwd(), "measurements")

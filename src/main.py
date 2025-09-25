@@ -146,7 +146,9 @@ class MasterGui:
         self.file_menu.add_command(label="Exit", command=self.on_closing)
 
         # Create a Measure menu
-        self.menu_bar.add_command(label="Measure", command=self.open_measure)
+        self.measure_menu = Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
+        self.measure_menu.add_command(label="Measure", command=self.open_measure)
 
         # Create a Parameter menu
         self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
@@ -157,8 +159,17 @@ class MasterGui:
         self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
         self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
         self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
+        self.tools_menu.add_separator()
+
         self.tools_menu.add_command(
-            label="Tunnel simulate", command=self.open_tunnel_simulate
+            label="Tunnel Simulation", command=self.open_tunnel_simulate
+        )
+        self.tools_menu.add_command(
+            label="Measure Simulation", command=self.open_measure_simulate
+        )
+       
+        self.tools_menu.add_command(
+            label="Info Simulation", command=self.show_simulation_info
         )
 
         # Create a frame to hold the terminal and scrollbar
@@ -342,6 +353,22 @@ class MasterGui:
         )
         self.disable_menu()
 
+    def open_measure_simulate(self):
+        # Open the MEASURE SIMULATE interface
+        global STATUS
+        STATUS = "MEASURE_SIMULATE"
+        # Clear the app frame
+        for widget in self.app_frame.winfo_children():
+            widget.destroy()
+        # Open the MEASURE interface in the app frame
+        self.measure_app = measure.MeasureApp(
+            master=self.app_frame,
+            write_command=self.usb_conn.write_command,
+            return_to_main=self.return_to_main,
+            simulate=True,
+        )
+        self.disable_menu()
+
     def open_tunnel(self):
         # self.usb_conn.write_command("PARAMETER,?")
         global STATUS
@@ -446,6 +473,13 @@ class MasterGui:
     def open_settings(self):
         # Implement the settings window or dialog here
         messagebox.showinfo("Settings", "Settings window not implemented yet.")
+
+    def show_simulation_info(self):
+        # Show information about simulation mode
+        messagebox.showinfo(
+            "Info Simulation",
+            "Simulation means: There is a connection between Ouput 'DAC_Z' and Tunnel Input 'TUN'",
+        )
 
     def on_closing(self):
         try:
