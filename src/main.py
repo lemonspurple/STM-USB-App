@@ -350,6 +350,7 @@ class MasterGui:
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
+            simulate=False
         )
         self.disable_menu()
 
@@ -365,7 +366,7 @@ class MasterGui:
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
-            simulate=True,
+            simulate=True
         )
         self.disable_menu()
 
@@ -383,6 +384,7 @@ class MasterGui:
             return_to_main=self.return_to_main,
             target_adc=self.target_adc,
             tolerance_adc=self.tolerance_adc,
+            simulate=False
         )
         self.disable_menu()
 

@@ -26,12 +26,30 @@ class USBConnection:
     def establish_connection(self):
         try:
             self.connection = serial.Serial(
-                self.port, self.baudrate, timeout=2, write_timeout=1
+                self.port, self.baudrate, timeout=1, write_timeout=1
             )
             self.is_connected = True
+            self.update_terminal(
+                f"Successfully connected to {self.port} at {self.baudrate} baud"
+            )
             return True
+        except serial.SerialTimeoutException as e:
+            self.is_connected = False
+            error_msg = f"Connection timeout on port {self.port}: {e}"
+            self.update_terminal(error_msg)
+            print(f"ERROR establish_connection timeout: {error_msg}")
+            return False
         except SerialException as e:
             self.is_connected = False
+            error_msg = f"Serial connection error on port {self.port}: {e}"
+            self.update_terminal(error_msg)
+            print(f"ERROR establish_connection: {error_msg}")
+            return False
+        except Exception as e:
+            self.is_connected = False
+            error_msg = f"Unexpected error connecting to {self.port}: {e}"
+            self.update_terminal(error_msg)
+            print(f"ERROR establish_connection unexpected: {error_msg}")
             return False
 
     def esp_restart(self):

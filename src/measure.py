@@ -53,7 +53,7 @@ class MeasureApp:
         self.redraw_plot()
 
         # Start the measurement process
-        if not self.simulate:
+        if self.simulate:
             self.write_command("MEASURE SIMULATE")
         else:
             self.write_command("MEASURE")
@@ -77,12 +77,23 @@ class MeasureApp:
         self.return_to_main()
 
     def update_data(self, message):
+        # Safety check to ensure the object is still active
+        if not hasattr(self, "is_active") or not self.is_active:
+            return False
+
         # Update the Parameter interface with new data
         data = message.split(",")
+
+        # Handle DONE message
+        if len(data) > 1 and data[1] == "DONE":
+            print("Measurement completed")
+            self.wrapper_return_to_main()
+            return True
+
         try:
             x, y, z = int(data[1]), int(data[2]), int(data[3])
-        except Exception as e:
-            print(f"Error: {e}, \n{message}")
+        except (IndexError, ValueError) as e:
+            print(f"Error parsing data: {e}, \n{message}")
             return False
 
         # Append the data to the file
@@ -98,6 +109,12 @@ class MeasureApp:
             self.redraw_plot()
 
     def redraw_plot(self):
+        # Safety check to ensure the object is still active and has required attributes
+        if not hasattr(self, "is_active") or not self.is_active:
+            return
+        if not hasattr(self, "ax") or not hasattr(self, "canvas"):
+            return
+
         # Clear the plot and redraw
         self.ax.clear()
         self.ax.set_xlim(0, 200)
