@@ -136,3 +136,16 @@ class USBConnection:
                 print(f"Error in esp_to_queue: {e}")
                 self.receive_running = False
                 raise
+
+    def stop_esp_to_queue(self):
+        # Stop the ESP to queue loop
+        self.receive_running = False
+
+    def close_connection(self):
+        # Close the USB connection and stop all threads
+        self.stop_read_queue()
+        self.stop_esp_to_queue()
+        if self.connection and self.connection.is_open:
+            self.connection.close()
+        self.is_connected = False
+        self.connection_established = False

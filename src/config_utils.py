@@ -16,14 +16,6 @@ else:
 config_file = os.path.join(base_path, "config.ini")
 print(f"Config file path: {config_file}")
 
-# Create the config file if it does not exist
-if not os.path.isfile(config_file):
-    with open(config_file, "w") as file:
-        config.write(file)
-
-# Read the config file
-config.read(config_file)
-
 
 def get_config(section, option, fallback=None):
     """
@@ -50,3 +42,36 @@ def set_config(section, option, value):
     config.set(section, option, value)
     with open(config_file, "w") as configfile:
         config.write(configfile)
+
+
+def create_default_config():
+    """Create a default config.ini file if it doesn't exist"""
+    default_config = configparser.ConfigParser()
+
+    # USB section
+    default_config.add_section("USB")
+    default_config.set("USB", "port", "COM3")
+    default_config.set("USB", "baudrate", "460800")
+
+    # ADC_TO_NA section
+    default_config.add_section("ADC_TO_NA")
+    default_config.set("ADC_TO_NA", "adc_voltage_divider", "1000000.0")
+    default_config.set("ADC_TO_NA", "adc_value_max", "65535.0")
+    default_config.set("ADC_TO_NA", "adc_voltage_max", "3.3")
+
+    # TUNNEL section
+    default_config.add_section("TUNNEL")
+    default_config.set("TUNNEL", "tunnelcounts", "100")
+
+    # Write the config file
+    with open(config_file, "w") as configfile:
+        default_config.write(configfile)
+    print(f"Created default config file: {config_file}")
+
+
+# Create the config file if it does not exist
+if not os.path.isfile(config_file):
+    create_default_config()
+
+# Read the config file
+config.read(config_file)

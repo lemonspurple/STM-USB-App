@@ -142,36 +142,40 @@ class TunnelApp:
         data = message.split(",")
         try:
             if data[0] == "TUNNEL":
-                flag, adc, z = int(data[1]), int(data[2]), int(data[3])
+                if len(data) >= 2 and data[1] == "DONE":
+                    # End of data reached
+                    self.redraw_plot()
+                    self.is_active = False  # Stop the tunnel loop
 
-                # Convert adc to signed 16-bit integer
-                if (
-                    adc > 0x7FFF
-                ):  # If adc is greater than the max positive value for int16
-                    adc -= 0x10000  # Convert to signed value
+                    # Wait for 500ms, then restart the tunnel loop if not frozen
+                    if not self.is_frozen:  # Check if the loop is frozen
+                        print("Restarting tunnel loop...")  # Debugging
+                        self.after_id = self.master.after(500, self.restart)
+                    else:
+                        print("Tunnel loop is frozen. Restart skipped.")  # Debugging
+                        # Show the "STOP - ESC" button only when the loop is stopped
+                        self.btn_back.grid()
+                        self.btn_freeze.config(text="Run")
+                    return True
+
+                elif len(data) >= 4:
+                    flag, adc, z = int(data[1]), int(data[2]), int(data[3])
+
+                    if flag == 0:  # Data out of limits
+                        self.adc_data.append(adc)
+                        self.z_data.append(z)
+                        self.colors.append("red")
+                    elif flag == 1:  # Data within limits
+                        self.adc_data.append(adc)
+                        self.z_data.append(z)
+                        self.colors.append("green")
+                else:
+                    return False
             else:
                 return False
         except Exception as e:
             print(f"Error: {e}, \n{message}")
             return False
-
-        if flag == 0 or flag == 1:
-            self.adc_data.append(adc)
-            self.z_data.append(z)
-            self.colors.append("red" if flag == 0 else "green")
-        else:
-            self.redraw_plot()
-            self.is_active = False  # Stop the tunnel loop
-
-            # Wait for 2 seconds, then restart the tunnel loop if not frozen
-            if not self.is_frozen:  # Check if the loop is frozen
-                print("Restarting tunnel loop...")  # Debugging
-                self.after_id = self.master.after(500, self.restart)
-            else:
-                print("Tunnel loop is frozen. Restart skipped.")  # Debugging
-                # Show the "STOP - ESC" button only when the loop is stopped
-                self.btn_back.grid()
-                self.btn_freeze.config(text="Run")
 
     def redraw_plot(self):
         # Clear the plot and redraw

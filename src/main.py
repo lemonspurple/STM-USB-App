@@ -167,7 +167,7 @@ class MasterGui:
         self.tools_menu.add_command(
             label="Measure Simulation", command=self.open_measure_simulate
         )
-       
+
         self.tools_menu.add_command(
             label="Info Simulation", command=self.show_simulation_info
         )
@@ -294,18 +294,28 @@ class MasterGui:
                 if self.parameter_app:
                     self.parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
+                # Handle both "TUNNEL,DONE" and "TUNNEL,flag,adc,z" formats
+                if len(ms) >= 2 and ms[1] == "DONE":
+                    # Pass DONE message directly without conversion
+                    self.update_terminal(msg)
+                    if self.tunnel_app:
+                        self.tunnel_app.update_data(msg)
+                elif len(ms) >= 4:
+                    # Handle data messages with flag, adc, z
+                    adc_value = int(ms[2])
+                    if (
+                        adc_value > 0x7FFF
+                    ):  # If greater than the max positive value for int16
+                        adc_value -= 0x10000  # Convert to signed value
+                    ms[2] = str(adc_value)
+                    msg = ",".join(ms)
 
-                adc_value = int(ms[2])
-                if (
-                    adc_value > 0x7FFF
-                ):  # If greater than the max positive value for int16
-                    adc_value -= 0x10000  # Convert to signed value
-                ms[2] = str(adc_value)
-                msg = ",".join(ms)
-
-                self.update_terminal(msg)
-                if self.tunnel_app:
-                    self.tunnel_app.update_data(msg)
+                    self.update_terminal(msg)
+                    if self.tunnel_app:
+                        self.tunnel_app.update_data(msg)
+                else:
+                    # Invalid TUNNEL message format
+                    self.update_terminal(f"Invalid TUNNEL message: {msg}")
             elif messagetype == "FIND":
                 self.update_terminal(msg)
             elif messagetype == "DATA":
@@ -350,7 +360,7 @@ class MasterGui:
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
-            simulate=False
+            simulate=False,
         )
         self.disable_menu()
 
@@ -366,7 +376,7 @@ class MasterGui:
             master=self.app_frame,
             write_command=self.usb_conn.write_command,
             return_to_main=self.return_to_main,
-            simulate=True
+            simulate=True,
         )
         self.disable_menu()
 
@@ -384,7 +394,7 @@ class MasterGui:
             return_to_main=self.return_to_main,
             target_adc=self.target_adc,
             tolerance_adc=self.tolerance_adc,
-            simulate=False
+            simulate=False,
         )
         self.disable_menu()
 
@@ -538,4 +548,3 @@ if __name__ == "__main__":
 
     print("Program is running...")
     root.mainloop()
-    print("Program exited root.mainloop()")
