@@ -20,6 +20,14 @@ With this app, the 500 EUR RTM is controlled via USB.
    .venv\Scripts\activate
    ```
 
+   **On Debian/Ubuntu based Linux**
+   ```
+   sudo apt install python3.12-venv
+   cd tkinter-usb-app
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
    **On macOS/Linux:**
    ```sh
    cd tkinter-usb-app
@@ -32,6 +40,11 @@ With this app, the 500 EUR RTM is controlled via USB.
    pip install -r requirements.txt
    ```
 
+   **On Debian/Ubuntu based Linux**
+   ```
+   sudo apt install python3-pip
+   pip install -r requirements.txt
+   ```
 
 ## Run the Project in Visual Studio Code
 
@@ -39,6 +52,7 @@ With this app, the 500 EUR RTM is controlled via USB.
 ### Open the Project in Visual Studio Code
 
 From your project directory, open the `tkinter-usb-app` folder in Visual Studio Code by running:
+(You may be required to install the Python extension to run it)
 
 ```sh
 cd tkinter-usb-app
