@@ -20,6 +20,14 @@ With this app, the 500 EUR RTM is controlled via USB.
    .venv\Scripts\activate
    ```
 
+   **On Debian/Ubuntu based Linux**
+   ```
+   sudo apt install python3.12-venv
+   cd tkinter-usb-app
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
    **On macOS/Linux:**
    ```sh
    cd tkinter-usb-app
@@ -32,13 +40,35 @@ With this app, the 500 EUR RTM is controlled via USB.
    pip install -r requirements.txt
    ```
 
+   **On Debian/Ubuntu based Linux**
+   ```
+   sudo apt install python3-pip
+   pip install -r requirements.txt
+   ```
 
 ## Run the Project in Visual Studio Code
 
+   **On Linux**
+   You'll get the following error if your user account lacks the permissions.
+   ```
+   COM port None is not available
+   Try to connect /dev/ttyUSB0...
+   Serial connection error on port /dev/ttyUSB0: [Errno 13] Permission denied: '/dev/ttyUSB0'
+   Could not open port /dev/ttyUSB0: [Errno 13] Permission denied: '/dev/ttyUSB0'
+   COM port /dev/ttyUSB0 cannot connect
+   ```
+
+   Therefore use the following command:
+   ```
+   sudo usermod -aG dialout $USER
+   ```
+
+   IMPORTANT: Change will take effect after reboot.
 
 ### Open the Project in Visual Studio Code
 
 From your project directory, open the `tkinter-usb-app` folder in Visual Studio Code by running:
+(You may be required to install the Python extension to run it)
 
 ```sh
 cd tkinter-usb-app

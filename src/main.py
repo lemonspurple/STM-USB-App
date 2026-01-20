@@ -25,8 +25,15 @@ import config_utils
 import os
 import sys
 import com_port_utils  # Import the com_port_utils module
-import msvcrt
 import atexit
+
+## Use fcntl over msvcrt if Linux is used
+IS_WINDOWS = (os.name == "nt")
+if IS_WINDOWS:
+    import msvcrt
+else:
+    import fcntl
+
 
 
 # Define the global STATUS variable
@@ -38,18 +45,23 @@ running = True
 
 def prevent_multiple_instances():
     global lock_handle
+
     lock_file = (
         os.path.join(os.path.dirname(sys.executable), "app.lock")
         if hasattr(sys, "_MEIPASS")
-        else "app.lock"
+        else os.path.join(os.path.dirname(__file__), "app.lock")
     )
+
     lock_handle = open(lock_file, "w")
+
     try:
-        msvcrt.locking(lock_handle.fileno(), msvcrt.LK_NBLCK, 1)
+        if IS_WINDOWS:
+            msvcrt.locking(lock_handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         print("Another instance of the application is already running.")
         sys.exit(1)
-
     # Register a cleanup function to delete the lock file on exit
     atexit.register(delete_lock_file, lock_file)
 
@@ -58,11 +70,18 @@ def delete_lock_file(lock_file):
     global lock_handle
     try:
         if lock_handle:
-            msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)  # Unlock the file
-            lock_handle.close()
-            lock_handle = None  # Set to None after closing
+            try:
+                if IS_WINDOWS:
+                    msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                lock_handle.close()
+                lock_handle = None # Set to None after closing
+
         if os.path.exists(lock_file):
-            os.remove(lock_file)  # Delete the lock file
+            os.remove(lock_file) # Delete the lock file
+
         print("Lock file deleted.")
     except Exception as e:
         print(f"Error deleting lock file: {e}")
@@ -70,16 +89,21 @@ def delete_lock_file(lock_file):
 
 def cleanup_tasks():
     global running, lock_handle
-    running = False  # Signal the thread to stop
+    running = False # Signal the thread to stop
     print("Cleaning up tasks...")
 
-    if lock_handle:  # Only unlock and close if not already handled
-        msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
-        lock_handle.close()
-        lock_handle = None  # Set to None after closing
+    if lock_handle: # Only unlock and close if not already handled
+        try:
+            if IS_WINDOWS:
+                msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            lock_handle.close()
+            lock_handle = None
+
     print("FOO All tasks closed.")
     # esp_api_client.close_usb_connection()  # Uncommented to close USB connection
-
 
 def global_on_close():
     print("on_close: Function triggered")
@@ -107,7 +131,10 @@ class MasterGui:
 
         icon_path = os.path.join(base_path, "assets", "icons", "stm_symbol.ico")
 
-        self.master.iconbitmap(icon_path)
+        try:
+            self.master.iconbitmap(icon_path)
+        except Exception as e:
+             print(f"Icon not set (ignored): {e}")
 
         self.setup_gui_interface()
         # Initialize the USB connection handler
