@@ -105,7 +105,6 @@ def cleanup_tasks():
             lock_handle.close()
             lock_handle = None
 
-    print("FOO All tasks closed.")
     # esp_api_client.close_usb_connection()  # Uncommented to close USB connection
 
 
@@ -251,14 +250,6 @@ class MasterGui:
 
     def try_to_connect(self):
         # Try to establish a connection and select port if it fails
-        self.update_terminal(
-            f"FOO Config file path: {config_utils.config_file}"
-        )  # Show config.ini path
-        if os.path.exists(config_utils.config_file):
-            self.update_terminal("Config file exists.")
-        else:
-            self.update_terminal("Config file does not exist.")
-
         result = self.connect()
         while not result:
             com_port_utils.select_port(self.master)

@@ -28,9 +28,8 @@ def create_menu(master, callbacks=None):
     file_menu.add_separator()
     file_menu.add_command(label="Exit", command=cb("on_closing"))
 
-    measure_menu = Menu(menu_bar, tearoff=0)
-    menu_bar.add_cascade(label="Measure", menu=measure_menu)
-    measure_menu.add_command(label="Measure", command=cb("open_measure"))
+    # Make 'Measure' a top-level menu command (start directly from main Measure)
+    menu_bar.add_command(label="Measure", command=cb("open_measure"))
 
     menu_bar.add_command(label="Parameter", command=cb("open_parameter"))
 
