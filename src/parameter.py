@@ -61,11 +61,14 @@ class ParameterApp:
             "maxX": "icon_startX.png",
             "maxY": "icon_startY.png",
             "multiplicator": "icon_multiplicator.png",
+
+            "save": "icon_save.png",
+            "load": "icon_load.png",
         }
 
         # Cache PhotoImages to avoid garbage collection
         self.icons = {}
-
+        # loading parameter icons
         self.fallback_icon = None
         fallback_path = os.path.join(self.assets_dir, "icon_unknown.png")
         if os.path.exists(fallback_path):
@@ -73,6 +76,21 @@ class ParameterApp:
                 self.fallback_icon = PhotoImage(file=fallback_path)
             except Exception:
                 self.fallback_icon = None
+        # loading ui icons
+        self.ui_icons = {}
+        for ui_key in ("save", "load"):
+            icon_img = None
+            icon_filename = self.param_icon_files.get(ui_key)
+            if icon_filename:
+                icon_path = os.path.join(self.assets_dir, icon_filename)
+                if os.path.exists(icon_path):
+                    try:
+                        icon_img = PhotoImage(file=icon_path)
+                    except Exception:
+                        icon_img = None
+            if icon_img is None:
+                icon_img = self.fallback_icon
+            self.ui_icons[ui_key] = icon_img
 
         # Saves data 
         self.param_store_path = self._get_param_store_path()
@@ -107,33 +125,39 @@ class ParameterApp:
             label.grid(column=1, row=i, padx=(0, 6), pady=1, sticky=W)
             entry.grid(column=2, row=i, padx=1, pady=1)
 
-        # Add Apply and Default buttons
+        self.frame_files = Frame(self.frame_parameter)
+        self.frame_files.grid(column=0, row=0, sticky=W)
+
+        self.frame_actions = Frame(self.frame_parameter)
+        self.frame_actions.grid(column=0, row=1, sticky=W)
+
+        #Adding Save / Load icons
+        self.btn_save_local = Button(
+            self.frame_files, text="Save", image=self.ui_icons["save"],
+            compound="left", command=self.save_parameters_to_file
+        )
+        self.btn_save_local.grid(column=0, row=0, padx=1, pady=1, sticky=W)
+
+        self.btn_load_local = Button(
+            self.frame_files, text="Load", image=self.ui_icons["load"],
+            compound="left", command=self.load_parameters_from_file
+        )
+        self.btn_load_local.grid(column=1, row=0, padx=5, pady=5, sticky=W)
+        #Adding Apply, Default, Exit icons
         self.btn_apply_parameter_setting = Button(
-            self.frame_parameter, text="Apply", command=self.apply_parameters
+            self.frame_actions, text="Apply", command=self.apply_parameters
         )
         self.btn_apply_parameter_setting.grid(column=0, row=0, padx=1, pady=1, sticky=W)
 
         self.btn_set_parameter_default = Button(
-            self.frame_parameter, text="Default", command=self.set_default_parameters
+            self.frame_actions, text="Default", command=self.set_default_parameters
         )
-        self.btn_set_parameter_default.grid(column=1, row=0, padx=1, pady=1, sticky=W)
+        self.btn_set_parameter_default.grid(column=1, row=0, padx=5, pady=1, sticky=W)
 
-        # Save is local, doesn't get sent to the device
-        self.btn_save_local = Button(
-            self.frame_parameter, text="Save", command=self.save_parameters_to_file
-        )
-        self.btn_save_local.grid(column=0, row=1, padx=1, pady=1, sticky=W)
-
-        self.btn_load_local = Button(
-            self.frame_parameter, text="Load", command=self.load_parameters_from_file
-        )
-        self.btn_load_local.grid(column=1, row=1, padx=1, pady=1, sticky=W)
-
-        # Add Exit button to return to the main interface
         self.btn_back = Button(
-            self.frame_parameter, text="Exit", command=self.return_to_main
+            self.frame_actions, text="Exit", command=self.return_to_main
         )
-        self.btn_back.grid(column=4, row=0, padx=100, pady=1, sticky=E)
+        self.btn_back.grid(column=2, row=0, padx=96, pady=1, sticky=E)
 
 
     def _get_param_store_path(self):
