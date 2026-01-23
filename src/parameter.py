@@ -1,7 +1,8 @@
 import os
 import sys
 import time
-from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame, PhotoImage
+import json
+from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame, PhotoImage, filedialog
 
 
 class ParameterApp:
@@ -15,7 +16,7 @@ class ParameterApp:
 
         # Create a frame for the ParameterApp
         self.frame_parameter = Frame(master)
-        self.frame_parameter.grid(column=0, row=2, padx=20, pady=(12, 1),sticky=W)
+        self.frame_parameter.grid(column=0, row=2, padx=20, pady=(12, 1), sticky=W)
 
         # Create a LabelFrame for editing parameters
         self.frame_edit = LabelFrame(master, text="Parameters")
@@ -62,7 +63,7 @@ class ParameterApp:
             "multiplicator": "icon_multiplicator.png",
         }
 
-        # Cache PhotoImages to avoid garbage collected
+        # Cache PhotoImages to avoid garbage collection
         self.icons = {}
 
         self.fallback_icon = None
@@ -72,6 +73,9 @@ class ParameterApp:
                 self.fallback_icon = PhotoImage(file=fallback_path)
             except Exception:
                 self.fallback_icon = None
+
+        # Saves data 
+        self.param_store_path = self._get_param_store_path()
 
         for i, key in enumerate(parameter_keys):
             icon_img = None
@@ -114,11 +118,78 @@ class ParameterApp:
         )
         self.btn_set_parameter_default.grid(column=1, row=0, padx=1, pady=1, sticky=W)
 
+        # Save is local, doesn't get sent to the device
+        self.btn_save_local = Button(
+            self.frame_parameter, text="Save", command=self.save_parameters_to_file
+        )
+        self.btn_save_local.grid(column=0, row=1, padx=1, pady=1, sticky=W)
+
+        self.btn_load_local = Button(
+            self.frame_parameter, text="Load", command=self.load_parameters_from_file
+        )
+        self.btn_load_local.grid(column=1, row=1, padx=1, pady=1, sticky=W)
+
         # Add Exit button to return to the main interface
         self.btn_back = Button(
             self.frame_parameter, text="Exit", command=self.return_to_main
         )
-        self.btn_back.grid(column=2, row=0, padx=100, pady=1, sticky=E)
+        self.btn_back.grid(column=4, row=0, padx=100, pady=1, sticky=E)
+
+
+    def _get_param_store_path(self):
+        base_dir = os.path.join(os.path.expanduser("~"), ".stm-usb-app")
+        os.makedirs(base_dir, exist_ok=True)
+        return os.path.join(base_dir, "parameters.json")
+
+    def _collect_parameters_from_ui(self):
+        data = {}
+        for key, var in self.parameter_vars.items():
+            data[key] = var.get()
+        return data
+
+    def _apply_parameters_to_ui(self, data: dict):
+        for key, value in data.items():
+            if key in self.parameter_vars:
+                self.parameter_vars[key].set(str(value))
+
+    def save_parameters_to_file(self):
+        path = filedialog.asksaveasfilename(
+            parent=self.master,
+            initialfile=os.path.basename(self.param_store_path),
+            initialdir=os.path.dirname(self.param_store_path),
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        self.param_store_path = path
+
+        data = self._collect_parameters_from_ui()
+        try:
+            with open(self.param_store_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"ERROR in save_parameters_to_file {e}")
+
+    def load_parameters_from_file(self):
+        path = filedialog.askopenfilename(
+            parent=self.master,
+            initialdir=os.path.dirname(self.param_store_path),
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        self.param_store_path = path
+
+        try:
+            if not os.path.exists(self.param_store_path):
+                return
+            with open(self.param_store_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self._apply_parameters_to_ui(data)
+        except Exception as e:
+            print(f"ERROR in load_parameters_from_file {e}")
 
     def request_parameter(self):
         self.write_command("PARAMETER,?")
