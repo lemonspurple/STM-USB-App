@@ -19,6 +19,8 @@ from tkinter import ttk
 from sinus import SinusApp
 from tunnel import TunnelApp
 from terminal import TerminalView
+from gui.menu import create_menu
+from gui.app_manager import AppManager
 import usb_connection
 import measure
 from adjust import AdjustApp
@@ -169,47 +171,27 @@ class MasterGui:
         try:
             if hasattr(self, "terminal_view"):
                 self.terminal_view.set_write_command(self.usb_conn.write_command)
+            if hasattr(self, "app_manager") and self.app_manager:
+                self.app_manager.set_write_command(self.usb_conn.write_command)
         except Exception:
             pass
 
     def setup_gui_interface(self):
-        # Create a menu bar
-        self.menu_bar = Menu(self.master)
-        self.master.config(menu=self.menu_bar)
+        # Create the menu bar (moved to gui/menu.py)
+        callbacks = {
+            "open_settings": self.open_settings,
+            "on_closing": self.on_closing,
+            "open_measure": self.open_measure,
+            "open_parameter": self.open_parameter,
+            "open_adjust": self.open_adjust,
+            "open_sinus": self.open_sinus,
+            "open_tunnel": self.open_tunnel,
+            "open_tunnel_simulate": self.open_tunnel_simulate,
+            "open_measure_simulate": self.open_measure_simulate,
+            "show_simulation_info": self.show_simulation_info,
+        }
+        self.menu_bar = create_menu(self.master, callbacks=callbacks)
 
-        # Create a File menu
-        self.file_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
-        self.file_menu.add_command(label="Settings", command=self.open_settings)
-        self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", command=self.on_closing)
-
-        # Create a Measure menu
-        self.measure_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
-        self.measure_menu.add_command(label="Measure", command=self.open_measure)
-
-        # Create a Parameter menu
-        self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
-
-        # Create a Tools menu
-        self.tools_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Tools", menu=self.tools_menu)
-        self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
-        self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
-        self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
-        self.tools_menu.add_separator()
-
-        self.tools_menu.add_command(
-            label="Tunnel Simulation", command=self.open_tunnel_simulate
-        )
-        self.tools_menu.add_command(
-            label="Measure Simulation", command=self.open_measure_simulate
-        )
-
-        self.tools_menu.add_command(
-            label="Info Simulation", command=self.show_simulation_info
-        )
         # Create a frame to hold the terminal and scrollbar, then instantiate TerminalView
         self.terminal_frame = Frame(self.master)
         # keep terminal area a fixed-ish width so app_frame displays correctly
@@ -227,9 +209,14 @@ class MasterGui:
         except Exception:
             pass
 
-        # Create a frame to hold the content of the apps on the right
-        self.app_frame = Frame(self.master)
-        self.app_frame.pack(side="right", fill="both", expand=True)
+        # Create the app manager which holds the right-side content
+        self.app_manager = AppManager(
+            master=self.master,
+            write_command=None,
+            return_to_main=self.return_to_main,
+            disable_menu_cb=self.disable_menu,
+            enable_menu_cb=self.enable_menu,
+        )
 
     def connect(self):
         # Establish a connection to the selected COM port
@@ -314,23 +301,32 @@ class MasterGui:
                 self.idle_received = True
             if messagetype == "ADJUST":
                 self.update_terminal(msg)
-                if self.adjust_app and self.adjust_app.is_active:
-                    self.adjust_app.update_data(msg)
+                adjust_app = None
+                if hasattr(self, "app_manager") and self.app_manager:
+                    adjust_app = self.app_manager.get_adjust_app()
+                if adjust_app and getattr(adjust_app, "is_active", False):
+                    adjust_app.update_data(msg)
             elif messagetype == "PARAMETER":
                 self.update_terminal(msg)
                 if ms[1] == "targetNa":
                     self.target_adc = self.calculate_adc_value(ms[2])
                 if ms[1] == "toleranceNa":
                     self.tolerance_adc = self.calculate_adc_value(ms[2])
-                if self.parameter_app:
-                    self.parameter_app.update_data(msg)
+                parameter_app = None
+                if hasattr(self, "app_manager") and self.app_manager:
+                    parameter_app = self.app_manager.get_parameter_app()
+                if parameter_app:
+                    parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
                 # Handle both "TUNNEL,DONE" and "TUNNEL,flag,adc,z" formats
                 if len(ms) >= 2 and ms[1] == "DONE":
                     # Pass DONE message directly without conversion
                     self.update_terminal(msg)
-                    if self.tunnel_app:
-                        self.tunnel_app.update_data(msg)
+                    tunnel_app = None
+                    if hasattr(self, "app_manager") and self.app_manager:
+                        tunnel_app = self.app_manager.get_tunnel_app()
+                    if tunnel_app:
+                        tunnel_app.update_data(msg)
                 elif len(ms) >= 4:
                     # Handle data messages with flag, adc, z
                     adc_value = int(ms[2])
@@ -342,8 +338,11 @@ class MasterGui:
                     msg = ",".join(ms)
 
                     self.update_terminal(msg)
-                    if self.tunnel_app:
-                        self.tunnel_app.update_data(msg)
+                    tunnel_app = None
+                    if hasattr(self, "app_manager") and self.app_manager:
+                        tunnel_app = self.app_manager.get_tunnel_app()
+                    if tunnel_app:
+                        tunnel_app.update_data(msg)
                 else:
                     # Invalid TUNNEL message format
                     self.update_terminal(f"Invalid TUNNEL message: {msg}")
@@ -352,12 +351,20 @@ class MasterGui:
             elif messagetype == "DATA":
                 try:
                     if len(ms) == 2 and ms[1] == "DONE":
-                        self.measure_app.redraw_plot()
+                        measure_app = None
+                        if hasattr(self, "app_manager") and self.app_manager:
+                            measure_app = self.app_manager.get_measure_app()
+                        if measure_app:
+                            measure_app.redraw_plot()
                         self.update_terminal("Measurement complete.")
 
                     # self.return_to_main()
                     if len(ms) == 4:
-                        self.measure_app.update_data(msg)
+                        measure_app = None
+                        if hasattr(self, "app_manager") and self.app_manager:
+                            measure_app = self.app_manager.get_measure_app()
+                        if measure_app:
+                            measure_app.update_data(msg)
 
                     # Plot next set of data
                     if ms[1] == "0":
@@ -383,126 +390,76 @@ class MasterGui:
         # Open the MEASURE interface
         global STATUS
         STATUS = "MEASURE"
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the MEASURE interface in the app frame
-        self.measure_app = measure.MeasureApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            simulate=False,
-        )
-        self.disable_menu()
+        # Delegate to AppManager
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_measure(simulate=False)
 
     def open_measure_simulate(self):
         # Open the MEASURE SIMULATE interface
         global STATUS
         STATUS = "MEASURE_SIMULATE"
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the MEASURE interface in the app frame
-        self.measure_app = measure.MeasureApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            simulate=True,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_measure(simulate=True)
 
     def open_tunnel(self):
         # self.usb_conn.write_command("PARAMETER,?")
         global STATUS
         STATUS = "TUNNEL"
 
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-
-        self.tunnel_app = TunnelApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            target_adc=self.target_adc,
-            tolerance_adc=self.tolerance_adc,
-            simulate=False,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.target_adc = self.target_adc
+            self.app_manager.tolerance_adc = self.tolerance_adc
+            self.app_manager.open_tunnel(simulate=False)
 
     def open_tunnel_simulate(self):
         # Open the TUNNEL SIMULATE interface
         global STATUS
         STATUS = "TUNNEL_SIMULATE"
 
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-
-        self.tunnel_app = TunnelApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            target_adc=self.target_adc,
-            tolerance_adc=self.tolerance_adc,
-            simulate=True,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.target_adc = self.target_adc
+            self.app_manager.tolerance_adc = self.tolerance_adc
+            self.app_manager.open_tunnel(simulate=True)
 
     def open_adjust(self):
         # Open the ADJUST interface
         global STATUS
         STATUS = "ADJUST"
 
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the ADJUST interface in the app frame
-        self.adjust_app = AdjustApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_adjust()
 
     def open_sinus(self):
         # Open the SINUS interface
         global STATUS
         STATUS = "SINUS"
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the SINUS interface in the app frame
-        self.sinus_app = SinusApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-        )
-        self.sinus_app.request_sinus()
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_sinus()
 
     def open_parameter(self):
         # Open the PARAMETER interface
         global STATUS
         STATUS = "PARAMETER"
 
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the PARAMETER interface in the app frame
-        self.parameter_app = ParameterApp(
-            self.app_frame, self.usb_conn.write_command, self.return_to_main
-        )
-        self.parameter_app.request_parameter()
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.set_write_command(self.usb_conn.write_command)
+            self.app_manager.open_parameter()
 
     def return_to_main(self):
-        self.usb_conn.write_command("STOP")
-        # Wait until all remaining data are shown in terminal
+        try:
+            self.usb_conn.write_command("STOP")
+        except Exception:
+            pass
 
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
+        # Clear the app area via AppManager if present (avoid recursion)
+        try:
+            if hasattr(self, "app_manager") and self.app_manager:
+                # _clear_app_frame removes widgets in the app area
+                self.app_manager._clear_app_frame()
+        except Exception:
+            pass
+
         # Recreate the main interface
-
         self.create_main_interface()
         self.enable_menu()
 

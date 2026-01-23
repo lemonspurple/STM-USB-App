@@ -51,7 +51,17 @@ class TunnelApp:
         self.after_id = None
 
         # Bind the Escape key globally to the wrapper_return_to_main method
-        self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
+        except Exception:
+            # Fallback to master if toplevel binding fails
+            try:
+                self.master.bind_all(
+                    "<Escape>", lambda event: self.wrapper_return_to_main()
+                )
+            except Exception:
+                pass
 
         # Initialize the plot
         self.tunnel_counts = float(
@@ -79,6 +89,15 @@ class TunnelApp:
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
         self.is_active = False
+        # Unbind the Escape handler to avoid leaking handlers
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.unbind_all("<Escape>")
+        except Exception:
+            try:
+                self.master.unbind_all("<Escape>")
+            except Exception:
+                pass
         self.return_to_main()
 
     def restart(self):
