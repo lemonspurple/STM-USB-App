@@ -111,7 +111,6 @@ def cleanup_tasks():
 
 def global_on_close():
     print("on_close: Function triggered")
-    print("FOO send STOP #########################")
     try:
         esp_api_client.usb_conn.write_command("STOP")
     except Exception as e:
@@ -500,12 +499,12 @@ class MasterGui:
 
     def create_main_interface(self):
         # Clear the existing interface
-        print("FOOO create_main_interface1")
+       
         for widget in self.master.winfo_children():
             widget.destroy()
         # Re-setup the interface without reinitializing the COM port
         self.setup_gui_interface()
-        print("FOOO create_main_interface2")
+       
 
     def open_settings(self):
         # Implement the settings window or dialog here
