@@ -24,14 +24,18 @@ def create_menu(master, callbacks=None):
 
     file_menu = Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Settings", command=cb("open_settings"))
     file_menu.add_separator()
     file_menu.add_command(label="Exit", command=cb("on_closing"))
+
+    # Top-level Settings menu with Measuring Parameter
+    settings_menu = Menu(menu_bar, tearoff=0)
+    menu_bar.add_cascade(label="Settings", menu=settings_menu)
+    settings_menu.add_command(label="Measuring Parameter", command=cb("open_parameter"))
 
     # Make 'Measure' a top-level menu command (start directly from main Measure)
     menu_bar.add_command(label="Measure", command=cb("open_measure"))
 
-    menu_bar.add_command(label="Parameter", command=cb("open_parameter"))
+    # 'Parameter' moved into Settings submenu
 
     tools_menu = Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="Tools", menu=tools_menu)

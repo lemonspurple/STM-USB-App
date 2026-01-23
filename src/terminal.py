@@ -1,6 +1,15 @@
 import os
-from tkinter import Frame, Text, Scrollbar, Button, END, PhotoImage, Toplevel, Label
-from tkinter import ttk
+from tkinter import (
+    END,
+    Button,
+    Frame,
+    Label,
+    PhotoImage,
+    Scrollbar,
+    Text,
+    Toplevel,
+    ttk,
+)
 
 
 class _Tooltip:

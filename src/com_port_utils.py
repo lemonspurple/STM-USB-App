@@ -1,6 +1,8 @@
+from tkinter import END, SINGLE, Button, Frame, Listbox, Toplevel, messagebox
+
 import serial.tools.list_ports
+
 import config_utils
-from tkinter import END, Toplevel, Listbox, SINGLE, Button, Frame, messagebox
 
 
 def refresh_ports(port_listbox):

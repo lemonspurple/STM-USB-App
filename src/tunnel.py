@@ -1,9 +1,11 @@
-from tkinter import Frame, Button
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import config_utils
 import os
 import sys
+from tkinter import Button, Frame
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import config_utils
 
 
 class TunnelApp:

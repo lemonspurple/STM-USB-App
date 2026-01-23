@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Frame, Button
+from tkinter import Button, Frame
 
 
 class SinusApp:

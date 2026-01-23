@@ -1,13 +1,14 @@
-from tkinter import Label, Button, LabelFrame, Scale, VERTICAL, messagebox
-from tkinter.ttk import Progressbar
-import time
-import tkinter as tk
-from tkinter import Frame
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import config_utils
 import os
 import sys
+import time
+import tkinter as tk
+from tkinter import VERTICAL, Button, Frame, Label, LabelFrame, Scale, messagebox
+from tkinter.ttk import Progressbar
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import config_utils
 
 
 class AdjustApp:

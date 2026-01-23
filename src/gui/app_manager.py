@@ -1,9 +1,10 @@
 from tkinter import Frame
+
 import measure
-from tunnel import TunnelApp
 from adjust import AdjustApp
-from sinus import SinusApp
 from parameter import ParameterApp
+from sinus import SinusApp
+from tunnel import TunnelApp
 
 
 class AppManager:

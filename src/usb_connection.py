@@ -1,9 +1,11 @@
-import time
-import serial
-from serial import SerialException
 import queue
 import threading
+import time
+
+import serial
 import serial.tools.list_ports
+from serial import SerialException
+
 import config_utils
 
 
@@ -29,9 +31,6 @@ class USBConnection:
                 self.port, self.baudrate, timeout=1, write_timeout=1
             )
             self.is_connected = True
-            self.update_terminal(
-                f"Successfully connected to {self.port} at {self.baudrate} baud"
-            )
             return True
         except serial.SerialTimeoutException as e:
             self.is_connected = False

@@ -1,35 +1,15 @@
-import time
-import threading
-from tkinter import (
-    Tk,
-    Frame,
-    Button,
-    Text,
-    Scrollbar,
-    Entry,
-    END,
-    Toplevel,
-    messagebox,
-    Menu,
-    Listbox,
-    SINGLE,
-    PhotoImage,
-)
-from tkinter import ttk
-from sinus import SinusApp
-from tunnel import TunnelApp
-from terminal import TerminalView
-from gui.menu import create_menu
-from gui.app_manager import AppManager
-import usb_connection
-import measure
-from adjust import AdjustApp
-from parameter import ParameterApp
-import config_utils
+import atexit
 import os
 import sys
+import time
+from tkinter import Frame, Tk, messagebox, ttk
+
 import com_port_utils  # Import the com_port_utils module
-import atexit
+import config_utils
+import usb_connection
+from gui.app_manager import AppManager
+from gui.menu import create_menu
+from terminal import TerminalView
 
 ## Use fcntl over msvcrt if Linux is used
 IS_WINDOWS = os.name == "nt"
@@ -177,7 +157,6 @@ class MasterGui:
     def setup_gui_interface(self):
         # Create the menu bar (moved to gui/menu.py)
         callbacks = {
-            "open_settings": self.open_settings,
             "on_closing": self.on_closing,
             "open_measure": self.open_measure,
             "open_parameter": self.open_parameter,
@@ -221,8 +200,6 @@ class MasterGui:
         global STATUS
 
         self.usb_conn.port = config_utils.get_config("USB", "port")
-
-        self.update_terminal(f"Try to connect {self.usb_conn.port}...")
 
         if not com_port_utils.is_com_port_available(self.usb_conn.port):
             self.update_terminal(f"COM port {self.usb_conn.port} is not available")
@@ -366,14 +343,14 @@ class MasterGui:
         # Disable all menu points
         self.menu_bar.entryconfig("File", state="disabled")
         self.menu_bar.entryconfig("Measure", state="disabled")
-        self.menu_bar.entryconfig("Parameter", state="disabled")
+        self.menu_bar.entryconfig("Settings", state="disabled")
         self.menu_bar.entryconfig("Tools", state="disabled")
 
     def enable_menu(self):
         # Enable all menu points
         self.menu_bar.entryconfig("File", state="normal")
         self.menu_bar.entryconfig("Measure", state="normal")
-        self.menu_bar.entryconfig("Parameter", state="normal")
+        self.menu_bar.entryconfig("Settings", state="normal")
         self.menu_bar.entryconfig("Tools", state="normal")
 
     def open_measure(self):
@@ -490,16 +467,15 @@ class MasterGui:
 
     def create_main_interface(self):
         # Clear the existing interface
-       
+
         for widget in self.master.winfo_children():
             widget.destroy()
         # Re-setup the interface without reinitializing the COM port
         self.setup_gui_interface()
-       
 
     def open_settings(self):
-        # Implement the settings window or dialog here
-        messagebox.showinfo("Settings", "Settings window not implemented yet.")
+        # Settings removed — kept for backward compatibility (no-op)
+        pass
 
     def show_simulation_info(self):
         # Show information about simulation mode
