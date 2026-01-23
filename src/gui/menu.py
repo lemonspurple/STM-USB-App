@@ -24,7 +24,7 @@ def create_menu(master, callbacks=None):
 
     file_menu = Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_separator()
+    # file_menu.add_separator()
     file_menu.add_command(label="Exit", command=cb("on_closing"))
 
     # Top-level Settings menu with Measuring Parameter
