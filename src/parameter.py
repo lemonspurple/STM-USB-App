@@ -1,5 +1,5 @@
 import time
-from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame
+from tkinter import Button, E, Entry, Frame, Label, LabelFrame, StringVar, W
 
 
 class ParameterApp:

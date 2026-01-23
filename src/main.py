@@ -1,39 +1,22 @@
-import time
-import threading
-from tkinter import (
-    Tk,
-    Frame,
-    Button,
-    Text,
-    Scrollbar,
-    END,
-    Toplevel,
-    messagebox,
-    Menu,
-    Listbox,
-    SINGLE,
-    PhotoImage,
-)
-from tkinter import ttk
-from sinus import SinusApp
-from tunnel import TunnelApp
-import usb_connection
-import measure
-from adjust import AdjustApp
-from parameter import ParameterApp
-import config_utils
+import atexit
 import os
 import sys
+import time
+from tkinter import Frame, Tk, messagebox, ttk
+
 import com_port_utils  # Import the com_port_utils module
-import atexit
+import config_utils
+import usb_connection
+from gui.app_manager import AppManager
+from gui.menu import create_menu
+from terminal import TerminalView
 
 ## Use fcntl over msvcrt if Linux is used
-IS_WINDOWS = (os.name == "nt")
+IS_WINDOWS = os.name == "nt"
 if IS_WINDOWS:
     import msvcrt
 else:
     import fcntl
-
 
 
 # Define the global STATUS variable
@@ -77,10 +60,10 @@ def delete_lock_file(lock_file):
                     fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
             finally:
                 lock_handle.close()
-                lock_handle = None # Set to None after closing
+                lock_handle = None  # Set to None after closing
 
         if os.path.exists(lock_file):
-            os.remove(lock_file) # Delete the lock file
+            os.remove(lock_file)  # Delete the lock file
 
         print("Lock file deleted.")
     except Exception as e:
@@ -89,10 +72,10 @@ def delete_lock_file(lock_file):
 
 def cleanup_tasks():
     global running, lock_handle
-    running = False # Signal the thread to stop
+    running = False  # Signal the thread to stop
     print("Cleaning up tasks...")
 
-    if lock_handle: # Only unlock and close if not already handled
+    if lock_handle:  # Only unlock and close if not already handled
         try:
             if IS_WINDOWS:
                 msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
@@ -102,12 +85,11 @@ def cleanup_tasks():
             lock_handle.close()
             lock_handle = None
 
-    print("FOO All tasks closed.")
     # esp_api_client.close_usb_connection()  # Uncommented to close USB connection
+
 
 def global_on_close():
     print("on_close: Function triggered")
-    print("FOO send STOP #########################")
     try:
         esp_api_client.usb_conn.write_command("STOP")
     except Exception as e:
@@ -134,7 +116,7 @@ class MasterGui:
         try:
             self.master.iconbitmap(icon_path)
         except Exception as e:
-             print(f"Icon not set (ignored): {e}")
+            print(f"Icon not set (ignored): {e}")
 
         self.setup_gui_interface()
         # Initialize the USB connection handler
@@ -150,6 +132,10 @@ class MasterGui:
         self.parameter_app = None
 
         self.measure_app = None
+        # Initialize optional app references to avoid AttributeError when
+        # dispatch_received_data is called before those apps are opened.
+        self.tunnel_app = None
+        self.sinus_app = None
         self.target_adc = 0
         self.tolerance_adc = 0
 
@@ -159,85 +145,61 @@ class MasterGui:
             update_terminal_callback=self.update_terminal,
             dispatcher_callback=self.dispatch_received_data,
         )
+        # Provide the write_command callback to the terminal view if present
+        try:
+            if hasattr(self, "terminal_view"):
+                self.terminal_view.set_write_command(self.usb_conn.write_command)
+            if hasattr(self, "app_manager") and self.app_manager:
+                self.app_manager.set_write_command(self.usb_conn.write_command)
+        except Exception:
+            pass
 
     def setup_gui_interface(self):
-        # Create a menu bar
-        self.menu_bar = Menu(self.master)
-        self.master.config(menu=self.menu_bar)
+        # Create the menu bar (moved to gui/menu.py)
+        callbacks = {
+            "on_closing": self.on_closing,
+            "open_measure": self.open_measure,
+            "open_parameter": self.open_parameter,
+            "open_adjust": self.open_adjust,
+            "open_sinus": self.open_sinus,
+            "open_tunnel": self.open_tunnel,
+            "open_tunnel_simulate": self.open_tunnel_simulate,
+            "open_measure_simulate": self.open_measure_simulate,
+            "show_simulation_info": self.show_simulation_info,
+        }
+        self.menu_bar = create_menu(self.master, callbacks=callbacks)
 
-        # Create a File menu
-        self.file_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
-        self.file_menu.add_command(label="Settings", command=self.open_settings)
-        self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", command=self.on_closing)
-
-        # Create a Measure menu
-        self.measure_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Measure", menu=self.measure_menu)
-        self.measure_menu.add_command(label="Measure", command=self.open_measure)
-
-        # Create a Parameter menu
-        self.menu_bar.add_command(label="Parameter", command=self.open_parameter)
-
-        # Create a Tools menu
-        self.tools_menu = Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Tools", menu=self.tools_menu)
-        self.tools_menu.add_command(label="DAC/ADC", command=self.open_adjust)
-        self.tools_menu.add_command(label="Sinus", command=self.open_sinus)
-        self.tools_menu.add_command(label="Tunnel", command=self.open_tunnel)
-        self.tools_menu.add_separator()
-
-        self.tools_menu.add_command(
-            label="Tunnel Simulation", command=self.open_tunnel_simulate
-        )
-        self.tools_menu.add_command(
-            label="Measure Simulation", command=self.open_measure_simulate
-        )
-
-        self.tools_menu.add_command(
-            label="Info Simulation", command=self.show_simulation_info
-        )
-
-        # Create a frame to hold the terminal and scrollbar
+        # Create a frame to hold the terminal and scrollbar, then instantiate TerminalView
         self.terminal_frame = Frame(self.master)
+        # keep terminal area a fixed-ish width so app_frame displays correctly
+        try:
+            self.terminal_frame.config(width=300)
+            self.terminal_frame.pack_propagate(False)
+        except Exception:
+            pass
         self.terminal_frame.pack(side="left", fill="y")
+        self.terminal_view = TerminalView(self.terminal_frame)
+        # Ensure the terminal_frame grid expands correctly
+        try:
+            self.terminal_frame.grid_rowconfigure(0, weight=1)
+            self.terminal_frame.grid_columnconfigure(0, weight=1)
+        except Exception:
+            pass
 
-        # Create a text widget to act as a terminal
-        self.terminal = Text(self.terminal_frame, height=15, width=30)
-        self.terminal.grid(row=0, column=0, sticky="nsew")
-
-        # Create a scrollbar for the terminal
-        self.scrollbar = Scrollbar(self.terminal_frame, command=self.terminal.yview)
-        self.scrollbar.grid(row=0, column=1, sticky="ns")
-        self.terminal["yscrollcommand"] = self.scrollbar.set
-
-        # Create a button to clear the terminal
-        self.clear_terminal_button = Button(
-            self.terminal_frame, text="Clear Terminal", command=self.clear_terminal
+        # Create the app manager which holds the right-side content
+        self.app_manager = AppManager(
+            master=self.master,
+            write_command=None,
+            return_to_main=self.return_to_main,
+            disable_menu_cb=self.disable_menu,
+            enable_menu_cb=self.enable_menu,
         )
-        self.clear_terminal_button.grid(row=1, column=0, columnspan=2, pady=10)
-
-        # Configure grid weights to make the terminal expand
-        self.terminal_frame.grid_rowconfigure(0, weight=1)
-        self.terminal_frame.grid_columnconfigure(0, weight=1)
-
-        # Create a frame to hold the content of the apps
-        self.app_frame = Frame(self.master)
-        self.app_frame.pack(side="right", fill="both", expand=True)
-
-    def clear_terminal(self):
-        # Clear the terminal content
-        if self.terminal and self.terminal.winfo_exists():
-            self.terminal.delete(1.0, END)
 
     def connect(self):
         # Establish a connection to the selected COM port
         global STATUS
 
         self.usb_conn.port = config_utils.get_config("USB", "port")
-
-        self.update_terminal(f"Try to connect {self.usb_conn.port}...")
 
         if not com_port_utils.is_com_port_available(self.usb_conn.port):
             self.update_terminal(f"COM port {self.usb_conn.port} is not available")
@@ -265,14 +227,6 @@ class MasterGui:
 
     def try_to_connect(self):
         # Try to establish a connection and select port if it fails
-        self.update_terminal(
-            f"FOO Config file path: {config_utils.config_file}"
-        )  # Show config.ini path
-        if os.path.exists(config_utils.config_file):
-            self.update_terminal("Config file exists.")
-        else:
-            self.update_terminal("Config file does not exist.")
-
         result = self.connect()
         while not result:
             com_port_utils.select_port(self.master)
@@ -290,14 +244,18 @@ class MasterGui:
 
     def update_terminal(self, message):
         # Update the terminal with a new message
-        if (
-            self.master.winfo_exists()
-            and self.terminal
-            and self.terminal.winfo_exists()
-        ):
-            self.terminal.insert(END, message + "\n")
-            self.terminal.see(END)
-            self.master.update_idletasks()  # Force update the terminal
+        try:
+            if hasattr(self, "terminal_view"):
+                self.terminal_view.update(message)
+                try:
+                    self.master.update_idletasks()
+                except Exception:
+                    pass
+            else:
+                # fallback: print to stdout
+                print(message)
+        except Exception as e:
+            print(f"Error updating terminal: {e}")
 
     def dispatch_received_data(self, message):
         # Dispatch received data based on the current status
@@ -310,23 +268,32 @@ class MasterGui:
                 self.idle_received = True
             if messagetype == "ADJUST":
                 self.update_terminal(msg)
-                if self.adjust_app and self.adjust_app.is_active:
-                    self.adjust_app.update_data(msg)
+                adjust_app = None
+                if hasattr(self, "app_manager") and self.app_manager:
+                    adjust_app = self.app_manager.get_adjust_app()
+                if adjust_app and getattr(adjust_app, "is_active", False):
+                    adjust_app.update_data(msg)
             elif messagetype == "PARAMETER":
                 self.update_terminal(msg)
                 if ms[1] == "targetNa":
                     self.target_adc = self.calculate_adc_value(ms[2])
                 if ms[1] == "toleranceNa":
                     self.tolerance_adc = self.calculate_adc_value(ms[2])
-                if self.parameter_app:
-                    self.parameter_app.update_data(msg)
+                parameter_app = None
+                if hasattr(self, "app_manager") and self.app_manager:
+                    parameter_app = self.app_manager.get_parameter_app()
+                if parameter_app:
+                    parameter_app.update_data(msg)
             elif messagetype == "TUNNEL":
                 # Handle both "TUNNEL,DONE" and "TUNNEL,flag,adc,z" formats
                 if len(ms) >= 2 and ms[1] == "DONE":
                     # Pass DONE message directly without conversion
                     self.update_terminal(msg)
-                    if self.tunnel_app:
-                        self.tunnel_app.update_data(msg)
+                    tunnel_app = None
+                    if hasattr(self, "app_manager") and self.app_manager:
+                        tunnel_app = self.app_manager.get_tunnel_app()
+                    if tunnel_app:
+                        tunnel_app.update_data(msg)
                 elif len(ms) >= 4:
                     # Handle data messages with flag, adc, z
                     adc_value = int(ms[2])
@@ -338,8 +305,11 @@ class MasterGui:
                     msg = ",".join(ms)
 
                     self.update_terminal(msg)
-                    if self.tunnel_app:
-                        self.tunnel_app.update_data(msg)
+                    tunnel_app = None
+                    if hasattr(self, "app_manager") and self.app_manager:
+                        tunnel_app = self.app_manager.get_tunnel_app()
+                    if tunnel_app:
+                        tunnel_app.update_data(msg)
                 else:
                     # Invalid TUNNEL message format
                     self.update_terminal(f"Invalid TUNNEL message: {msg}")
@@ -348,12 +318,20 @@ class MasterGui:
             elif messagetype == "DATA":
                 try:
                     if len(ms) == 2 and ms[1] == "DONE":
-                        self.measure_app.redraw_plot()
+                        measure_app = None
+                        if hasattr(self, "app_manager") and self.app_manager:
+                            measure_app = self.app_manager.get_measure_app()
+                        if measure_app:
+                            measure_app.redraw_plot()
                         self.update_terminal("Measurement complete.")
 
                     # self.return_to_main()
                     if len(ms) == 4:
-                        self.measure_app.update_data(msg)
+                        measure_app = None
+                        if hasattr(self, "app_manager") and self.app_manager:
+                            measure_app = self.app_manager.get_measure_app()
+                        if measure_app:
+                            measure_app.update_data(msg)
 
                     # Plot next set of data
                     if ms[1] == "0":
@@ -365,153 +343,139 @@ class MasterGui:
         # Disable all menu points
         self.menu_bar.entryconfig("File", state="disabled")
         self.menu_bar.entryconfig("Measure", state="disabled")
-        self.menu_bar.entryconfig("Parameter", state="disabled")
+        self.menu_bar.entryconfig("Settings", state="disabled")
         self.menu_bar.entryconfig("Tools", state="disabled")
 
     def enable_menu(self):
         # Enable all menu points
         self.menu_bar.entryconfig("File", state="normal")
         self.menu_bar.entryconfig("Measure", state="normal")
-        self.menu_bar.entryconfig("Parameter", state="normal")
+        self.menu_bar.entryconfig("Settings", state="normal")
         self.menu_bar.entryconfig("Tools", state="normal")
 
     def open_measure(self):
         # Open the MEASURE interface
         global STATUS
         STATUS = "MEASURE"
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the MEASURE interface in the app frame
-        self.measure_app = measure.MeasureApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            simulate=False,
-        )
-        self.disable_menu()
+        # Delegate to AppManager
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_measure(simulate=False)
 
     def open_measure_simulate(self):
         # Open the MEASURE SIMULATE interface
         global STATUS
         STATUS = "MEASURE_SIMULATE"
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the MEASURE interface in the app frame
-        self.measure_app = measure.MeasureApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            simulate=True,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_measure(simulate=True)
 
     def open_tunnel(self):
         # self.usb_conn.write_command("PARAMETER,?")
         global STATUS
         STATUS = "TUNNEL"
 
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-
-        self.tunnel_app = TunnelApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            target_adc=self.target_adc,
-            tolerance_adc=self.tolerance_adc,
-            simulate=False,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.target_adc = self.target_adc
+            self.app_manager.tolerance_adc = self.tolerance_adc
+            self.app_manager.open_tunnel(simulate=False)
 
     def open_tunnel_simulate(self):
         # Open the TUNNEL SIMULATE interface
         global STATUS
         STATUS = "TUNNEL_SIMULATE"
 
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-
-        self.tunnel_app = TunnelApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-            target_adc=self.target_adc,
-            tolerance_adc=self.tolerance_adc,
-            simulate=True,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.target_adc = self.target_adc
+            self.app_manager.tolerance_adc = self.tolerance_adc
+            self.app_manager.open_tunnel(simulate=True)
 
     def open_adjust(self):
         # Open the ADJUST interface
         global STATUS
         STATUS = "ADJUST"
 
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the ADJUST interface in the app frame
-        self.adjust_app = AdjustApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-        )
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_adjust()
 
     def open_sinus(self):
         # Open the SINUS interface
         global STATUS
         STATUS = "SINUS"
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the SINUS interface in the app frame
-        self.sinus_app = SinusApp(
-            master=self.app_frame,
-            write_command=self.usb_conn.write_command,
-            return_to_main=self.return_to_main,
-        )
-        self.sinus_app.request_sinus()
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.open_sinus()
 
     def open_parameter(self):
         # Open the PARAMETER interface
         global STATUS
         STATUS = "PARAMETER"
 
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Open the PARAMETER interface in the app frame
-        self.parameter_app = ParameterApp(
-            self.app_frame, self.usb_conn.write_command, self.return_to_main
-        )
-        self.parameter_app.request_parameter()
-        self.disable_menu()
+        if hasattr(self, "app_manager") and self.app_manager:
+            self.app_manager.set_write_command(self.usb_conn.write_command)
+            self.app_manager.open_parameter()
 
     def return_to_main(self):
-        self.usb_conn.write_command("STOP")
-        # Wait until all remaining data are shown in terminal
+        # Send STOP and wait for an "IDLE" response before closing the app
+        try:
+            self.idle_received = False
+            try:
+                if hasattr(self, "usb_conn") and self.usb_conn:
+                    self.usb_conn.write_command("STOP")
+            except Exception:
+                pass
+        except Exception:
+            pass
 
-        # Clear the app frame
-        for widget in self.app_frame.winfo_children():
-            widget.destroy()
-        # Recreate the main interface
+        # Wait for IDLE (set by dispatch_received_data) with timeout
+        try:
+            try:
+                timeout = float(config_utils.get_config("GENERAL", "stop_timeout"))
+            except Exception:
+                timeout = 3.0
+            start_time = time.time()
+            while not self.idle_received:
+                try:
+                    self.master.update()
+                except Exception:
+                    pass
+                time.sleep(0.05)
+                if time.time() - start_time > timeout:
+                    self.update_terminal("Timeout waiting for IDLE after STOP")
+                    break
+        except Exception:
+            pass
 
-        self.create_main_interface()
+        # Clear the app area via AppManager (remove widgets and clear references)
+        try:
+            if hasattr(self, "app_manager") and self.app_manager:
+                self.app_manager._clear_app_frame()
+                try:
+                    self.app_manager.measure_app = None
+                    self.app_manager.tunnel_app = None
+                    self.app_manager.adjust_app = None
+                    self.app_manager.sinus_app = None
+                    self.app_manager.parameter_app = None
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Do NOT close the main window — just re-enable the menu and wait for user selection
+        try:
+            STATUS = "IDLE"
+        except Exception:
+            pass
         self.enable_menu()
 
     def create_main_interface(self):
         # Clear the existing interface
+
         for widget in self.master.winfo_children():
             widget.destroy()
         # Re-setup the interface without reinitializing the COM port
         self.setup_gui_interface()
 
     def open_settings(self):
-        # Implement the settings window or dialog here
-        messagebox.showinfo("Settings", "Settings window not implemented yet.")
+        # Settings removed — kept for backward compatibility (no-op)
+        pass
 
     def show_simulation_info(self):
         # Show information about simulation mode

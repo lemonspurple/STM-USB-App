@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Frame, Button
+from tkinter import Button, Frame
 
 
 class SinusApp:
@@ -31,7 +31,22 @@ class SinusApp:
     def wrapper_return_to_main(self):
         # Wrapper function to handle returning to the main interface
         self.is_active = False
+        # Unbind Escape handler if bound on toplevel
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.unbind_all("<Escape>")
+        except Exception:
+            try:
+                self.master.unbind_all("<Escape>")
+            except Exception:
+                pass
         self.return_to_main()
 
     def request_sinus(self):
-        self.write_command("SINUS")
+        try:
+            if callable(self.write_command):
+                self.write_command("SINUS")
+            else:
+                print("SinusApp: write_command not set, skipping SINUS")
+        except Exception as e:
+            print(f"SinusApp: error sending SINUS: {e}")

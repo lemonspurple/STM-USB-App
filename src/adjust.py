@@ -1,13 +1,14 @@
-from tkinter import Label, Button, LabelFrame, Scale, VERTICAL, messagebox
-from tkinter.ttk import Progressbar
-import time
-import tkinter as tk
-from tkinter import Frame
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import config_utils
 import os
 import sys
+import time
+import tkinter as tk
+from tkinter import VERTICAL, Button, Frame, Label, LabelFrame, Scale, messagebox
+from tkinter.ttk import Progressbar
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import config_utils
 
 
 class AdjustApp:
@@ -142,10 +143,25 @@ class AdjustApp:
         self.send_adjust_to_esp()
 
     def send_adjust_to_esp(self):
-        self.write_command("ADJUST")
+        try:
+            if callable(self.write_command):
+                self.write_command("ADJUST")
+            else:
+                print("AdjustApp: write_command not set, skipping ADJUST")
+        except Exception as e:
+            print(f"AdjustApp: error sending ADJUST: {e}")
 
     def wrapper_return_to_main(self):
         self.is_active = False
+        # Unbind Escape if it was bound on toplevel
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.unbind_all("<Escape>")
+        except Exception:
+            try:
+                self.master.unbind_all("<Escape>")
+            except Exception:
+                pass
         self.return_to_main()
 
     def on_slider_xyz_button_release(self, event):
@@ -296,7 +312,7 @@ class TunnelApp:
             self.target_adc,
             self.tolerance_adc,
         )
-        #print(f"Tolerance ADC: {self.tolerance_adc}")
+        # print(f"Tolerance ADC: {self.tolerance_adc}")
 
     def clear_plot_data(self):
         # Clear the plot data
@@ -372,7 +388,7 @@ class TunnelApp:
             label="Limit Lo",
         )
         self.ax.set_xlim(0, self.tunnel_counts)
-        #self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
+        # self.ax.set_ylim(0, 0xFFFF)  # Adjust y-axis limit if needed
         self.ax.set_ylim(-0x8000, 0x7FFF)  # Set y-axis limit to int16_t range
         self.ax.set_xlabel("Counter")
         self.ax.set_ylabel("ADC and DAC Z")

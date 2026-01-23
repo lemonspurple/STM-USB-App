@@ -1,9 +1,11 @@
-from tkinter import Frame, Button
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import config_utils
 import os
 import sys
+from tkinter import Button, Frame
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import config_utils
 
 
 class TunnelApp:
@@ -51,7 +53,17 @@ class TunnelApp:
         self.after_id = None
 
         # Bind the Escape key globally to the wrapper_return_to_main method
-        self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
+        except Exception:
+            # Fallback to master if toplevel binding fails
+            try:
+                self.master.bind_all(
+                    "<Escape>", lambda event: self.wrapper_return_to_main()
+                )
+            except Exception:
+                pass
 
         # Initialize the plot
         self.tunnel_counts = float(
@@ -67,10 +79,18 @@ class TunnelApp:
         self.colors = []
 
         # Start the measurement process with the read tunnelcounts value
-        if self.simulate:
-            self.write_command(f"TUNNEL SIMULATE,{int(abs(self.tunnel_counts))}")
-        else:
-            self.write_command(f"TUNNEL,{int(abs(self.tunnel_counts))}")
+        cmd = (
+            f"TUNNEL SIMULATE,{int(abs(self.tunnel_counts))}"
+            if self.simulate
+            else f"TUNNEL,{int(abs(self.tunnel_counts))}"
+        )
+        try:
+            if callable(self.write_command):
+                self.write_command(cmd)
+            else:
+                print(f"TunnelApp: write_command not set, skipping send: {cmd}")
+        except Exception as e:
+            print(f"TunnelApp: error sending command '{cmd}': {e}")
 
     def update_adc_limits(self, target_adc, limit_adc):
         self.target_adc = target_adc
@@ -79,21 +99,38 @@ class TunnelApp:
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
         self.is_active = False
+        # Unbind the Escape handler to avoid leaking handlers
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.unbind_all("<Escape>")
+        except Exception:
+            try:
+                self.master.unbind_all("<Escape>")
+            except Exception:
+                pass
         self.return_to_main()
 
     def restart(self):
         # Clear the plot data
         self.clear_plot_data()
         # Restart the TunnelApp
-        self.frame.destroy()
-        self.__init__(
-            self.master,
-            self.write_command,
-            self.return_to_main,
-            self.target_adc,
-            self.tolerance_adc,
-            self.simulate,
-        )
+        # Destroy existing UI and recreate the TunnelApp instance in-place.
+        try:
+            self.frame.destroy()
+        except Exception:
+            pass
+        try:
+            # Re-initialize the object safely; write_command may be None.
+            self.__init__(
+                self.master,
+                self.write_command,
+                self.return_to_main,
+                self.target_adc,
+                self.tolerance_adc,
+                self.simulate,
+            )
+        except Exception as e:
+            print(f"TunnelApp.restart: failed to reinitialize TunnelApp: {e}")
 
     def clear_plot_data(self):
         # Clear the plot data
