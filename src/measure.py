@@ -52,11 +52,15 @@ class MeasureApp:
         )  # Connect the hover event
         self.redraw_plot()
 
-        # Start the measurement process
-        if self.simulate:
-            self.write_command("MEASURE SIMULATE")
-        else:
-            self.write_command("MEASURE")
+        # Start the measurement process (only if write_command is callable)
+        try:
+            cmd = "MEASURE SIMULATE" if self.simulate else "MEASURE"
+            if callable(self.write_command):
+                self.write_command(cmd)
+            else:
+                print(f"MeasureApp: write_command not set, skipping send: {cmd}")
+        except Exception as e:
+            print(f"MeasureApp: error sending command '{cmd}': {e}")
 
         # Create the measurements folder if it doesn't exist
         measurements_folder = os.path.join(os.getcwd(), "measurements")
@@ -68,12 +72,30 @@ class MeasureApp:
             measurements_folder, f"measurement_{timestamp}.csv"
         )
 
-        # Bind the Escape key globally to the wrapper_return_to_main method
-        self.master.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
+        # Bind the Escape key on the toplevel so it can be unbound cleanly
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.bind_all("<Escape>", lambda event: self.wrapper_return_to_main())
+        except Exception:
+            try:
+                self.master.bind_all(
+                    "<Escape>", lambda event: self.wrapper_return_to_main()
+                )
+            except Exception:
+                pass
 
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
         self.is_active = False
+        # Unbind escape handler to avoid leaking handlers
+        try:
+            toplevel = self.frame.winfo_toplevel()
+            toplevel.unbind_all("<Escape>")
+        except Exception:
+            try:
+                self.master.unbind_all("<Escape>")
+            except Exception:
+                pass
         self.return_to_main()
 
     def update_data(self, message):

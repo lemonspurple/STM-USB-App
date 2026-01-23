@@ -446,29 +446,66 @@ class MasterGui:
             self.app_manager.open_parameter()
 
     def return_to_main(self):
+        # Send STOP and wait for an "IDLE" response before closing the app
         try:
-            self.usb_conn.write_command("STOP")
+            self.idle_received = False
+            try:
+                if hasattr(self, "usb_conn") and self.usb_conn:
+                    self.usb_conn.write_command("STOP")
+            except Exception:
+                pass
         except Exception:
             pass
 
-        # Clear the app area via AppManager if present (avoid recursion)
+        # Wait for IDLE (set by dispatch_received_data) with timeout
+        try:
+            try:
+                timeout = float(config_utils.get_config("GENERAL", "stop_timeout"))
+            except Exception:
+                timeout = 3.0
+            start_time = time.time()
+            while not self.idle_received:
+                try:
+                    self.master.update()
+                except Exception:
+                    pass
+                time.sleep(0.05)
+                if time.time() - start_time > timeout:
+                    self.update_terminal("Timeout waiting for IDLE after STOP")
+                    break
+        except Exception:
+            pass
+
+        # Clear the app area via AppManager (remove widgets and clear references)
         try:
             if hasattr(self, "app_manager") and self.app_manager:
-                # _clear_app_frame removes widgets in the app area
                 self.app_manager._clear_app_frame()
+                try:
+                    self.app_manager.measure_app = None
+                    self.app_manager.tunnel_app = None
+                    self.app_manager.adjust_app = None
+                    self.app_manager.sinus_app = None
+                    self.app_manager.parameter_app = None
+                except Exception:
+                    pass
         except Exception:
             pass
 
-        # Recreate the main interface
-        self.create_main_interface()
+        # Do NOT close the main window — just re-enable the menu and wait for user selection
+        try:
+            STATUS = "IDLE"
+        except Exception:
+            pass
         self.enable_menu()
 
     def create_main_interface(self):
         # Clear the existing interface
+        print("FOOO create_main_interface1")
         for widget in self.master.winfo_children():
             widget.destroy()
         # Re-setup the interface without reinitializing the COM port
         self.setup_gui_interface()
+        print("FOOO create_main_interface2")
 
     def open_settings(self):
         # Implement the settings window or dialog here

@@ -112,19 +112,7 @@ class AppManager:
             pass
         self.disable_menu()
 
-    def return_to_main(self):
-        # send STOP if write_command available
-        try:
-            if self.write_command:
-                self.write_command("STOP")
-        except Exception:
-            pass
-        self._clear_app_frame()
-        # caller (MasterGui) is responsible for recreating main interface if needed
-        if callable(self.return_to_main_cb):
-            self.return_to_main_cb()
-
-    # Helpers used by MasterGui.dispatch_received_data:
+       # Helpers used by MasterGui.dispatch_received_data:
     def get_adjust_app(self):
         return self.adjust_app
 

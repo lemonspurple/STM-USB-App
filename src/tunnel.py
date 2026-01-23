@@ -77,10 +77,18 @@ class TunnelApp:
         self.colors = []
 
         # Start the measurement process with the read tunnelcounts value
-        if self.simulate:
-            self.write_command(f"TUNNEL SIMULATE,{int(abs(self.tunnel_counts))}")
-        else:
-            self.write_command(f"TUNNEL,{int(abs(self.tunnel_counts))}")
+        cmd = (
+            f"TUNNEL SIMULATE,{int(abs(self.tunnel_counts))}"
+            if self.simulate
+            else f"TUNNEL,{int(abs(self.tunnel_counts))}"
+        )
+        try:
+            if callable(self.write_command):
+                self.write_command(cmd)
+            else:
+                print(f"TunnelApp: write_command not set, skipping send: {cmd}")
+        except Exception as e:
+            print(f"TunnelApp: error sending command '{cmd}': {e}")
 
     def update_adc_limits(self, target_adc, limit_adc):
         self.target_adc = target_adc
@@ -104,15 +112,23 @@ class TunnelApp:
         # Clear the plot data
         self.clear_plot_data()
         # Restart the TunnelApp
-        self.frame.destroy()
-        self.__init__(
-            self.master,
-            self.write_command,
-            self.return_to_main,
-            self.target_adc,
-            self.tolerance_adc,
-            self.simulate,
-        )
+        # Destroy existing UI and recreate the TunnelApp instance in-place.
+        try:
+            self.frame.destroy()
+        except Exception:
+            pass
+        try:
+            # Re-initialize the object safely; write_command may be None.
+            self.__init__(
+                self.master,
+                self.write_command,
+                self.return_to_main,
+                self.target_adc,
+                self.tolerance_adc,
+                self.simulate,
+            )
+        except Exception as e:
+            print(f"TunnelApp.restart: failed to reinitialize TunnelApp: {e}")
 
     def clear_plot_data(self):
         # Clear the plot data

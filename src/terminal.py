@@ -215,13 +215,31 @@ class TerminalView:
 
     def update(self, message):
         try:
+            # If the underlying widget was destroyed, skip update
+            if not getattr(self, "terminal", None):
+                return
+            try:
+                if not self.terminal.winfo_exists():
+                    return
+            except Exception:
+                # If winfo_exists isn't available for some reason, proceed and handle exceptions
+                pass
+
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
         except Exception as e:
+            # Avoid noisy Tcl errors when the widget was destroyed concurrently
             print(f"TerminalView update error: {e}")
 
     def clear(self):
         try:
+            if not getattr(self, "terminal", None):
+                return
+            try:
+                if not self.terminal.winfo_exists():
+                    return
+            except Exception:
+                pass
             self.terminal.delete(1.0, END)
         except Exception as e:
             print(f"TerminalView clear error: {e}")
