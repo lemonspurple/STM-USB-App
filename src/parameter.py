@@ -1,5 +1,5 @@
 import time
-from tkinter import Button, E, Entry, Frame, Label, LabelFrame, StringVar, W
+from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame
 
 
 class ParameterApp:
@@ -13,7 +13,7 @@ class ParameterApp:
 
         # Create a frame for the ParameterApp
         self.frame_parameter = Frame(master)
-        self.frame_parameter.grid(column=1, row=0, padx=1, pady=1, sticky=W)
+        self.frame_parameter.grid(column=0, row=2, padx=1, pady=1, sticky=W)
 
         # Create a LabelFrame for editing parameters
         self.frame_edit = LabelFrame(master, text="Parameters")
@@ -48,22 +48,22 @@ class ParameterApp:
             label.grid(column=0, row=i, padx=1, pady=1, sticky=W)
             entry.grid(column=1, row=i, padx=1, pady=1)
 
-        # Add Stop button to return to the main interface
-        self.btn_back = Button(
-            self.frame_parameter, text="Stop", command=self.return_to_main
-        )
-        self.btn_back.grid(column=0, row=0, padx=1, pady=1, sticky=W)
-
         # Add Apply and Default buttons
         self.btn_apply_parameter_setting = Button(
             self.frame_parameter, text="Apply", command=self.apply_parameters
         )
-        self.btn_apply_parameter_setting.grid(column=1, row=0, padx=1, pady=1, sticky=W)
+        self.btn_apply_parameter_setting.grid(column=0, row=0, padx=1, pady=1, sticky=W)
 
         self.btn_set_parameter_default = Button(
             self.frame_parameter, text="Default", command=self.set_default_parameters
         )
-        self.btn_set_parameter_default.grid(column=2, row=0, padx=1, pady=1, sticky=E)
+        self.btn_set_parameter_default.grid(column=1, row=0, padx=1, pady=1, sticky=W)
+
+        # Add Exit button to return to the main interface
+        self.btn_back = Button(
+            self.frame_parameter, text="Exit", command=self.return_to_main
+        )
+        self.btn_back.grid(column=2, row=0, padx=69, pady=1, sticky=E)
 
     def request_parameter(self):
         self.write_command("PARAMETER,?")
