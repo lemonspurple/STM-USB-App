@@ -6,6 +6,7 @@ from tkinter import (
     Button,
     Text,
     Scrollbar,
+    Entry,
     END,
     Toplevel,
     messagebox,
@@ -28,12 +29,11 @@ import com_port_utils  # Import the com_port_utils module
 import atexit
 
 ## Use fcntl over msvcrt if Linux is used
-IS_WINDOWS = (os.name == "nt")
+IS_WINDOWS = os.name == "nt"
 if IS_WINDOWS:
     import msvcrt
 else:
     import fcntl
-
 
 
 # Define the global STATUS variable
@@ -77,10 +77,10 @@ def delete_lock_file(lock_file):
                     fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
             finally:
                 lock_handle.close()
-                lock_handle = None # Set to None after closing
+                lock_handle = None  # Set to None after closing
 
         if os.path.exists(lock_file):
-            os.remove(lock_file) # Delete the lock file
+            os.remove(lock_file)  # Delete the lock file
 
         print("Lock file deleted.")
     except Exception as e:
@@ -89,10 +89,10 @@ def delete_lock_file(lock_file):
 
 def cleanup_tasks():
     global running, lock_handle
-    running = False # Signal the thread to stop
+    running = False  # Signal the thread to stop
     print("Cleaning up tasks...")
 
-    if lock_handle: # Only unlock and close if not already handled
+    if lock_handle:  # Only unlock and close if not already handled
         try:
             if IS_WINDOWS:
                 msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
@@ -104,6 +104,7 @@ def cleanup_tasks():
 
     print("FOO All tasks closed.")
     # esp_api_client.close_usb_connection()  # Uncommented to close USB connection
+
 
 def global_on_close():
     print("on_close: Function triggered")
@@ -134,7 +135,7 @@ class MasterGui:
         try:
             self.master.iconbitmap(icon_path)
         except Exception as e:
-             print(f"Icon not set (ignored): {e}")
+            print(f"Icon not set (ignored): {e}")
 
         self.setup_gui_interface()
         # Initialize the USB connection handler
@@ -212,15 +213,159 @@ class MasterGui:
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.terminal["yscrollcommand"] = self.scrollbar.set
 
-        # Create a button to clear the terminal
-        self.clear_terminal_button = Button(
-            self.terminal_frame, text="Clear Terminal", command=self.clear_terminal
-        )
-        self.clear_terminal_button.grid(row=1, column=0, columnspan=2, pady=10)
+        # Create a button to clear the terminal (use small icon, fallback to text)
+        try:
+            if hasattr(sys, "_MEIPASS"):
+                icons_base = sys._MEIPASS
+            else:
+                icons_base = os.path.dirname(__file__)
+            refresh_icon_path = os.path.abspath(
+                os.path.join(icons_base, "assets", "icons", "refresh.png")
+            )
+            if os.path.exists(refresh_icon_path):
+                try:
+                    self.clear_icon = PhotoImage(file=refresh_icon_path)
+                    try:
+                        icon_h = self.clear_icon.height()
+                        icon_w = self.clear_icon.width()
+                        max_size = 20
+                        if icon_h > max_size or icon_w > max_size:
+                            factor_h = max(1, int(icon_h / max_size))
+                            factor_w = max(1, int(icon_w / max_size))
+                            factor = max(factor_h, factor_w)
+                            self.clear_icon = self.clear_icon.subsample(factor, factor)
+                    except Exception:
+                        pass
+
+                    self.clear_terminal_button = Button(
+                        self.terminal_frame,
+                        image=self.clear_icon,
+                        command=self.clear_terminal,
+                        relief="flat",
+                        bd=0,
+                        highlightthickness=0,
+                    )
+                except Exception as e:
+                    print(f"Failed to load clear icon: {e}")
+                    self.clear_terminal_button = Button(
+                        self.terminal_frame, text="Clear", command=self.clear_terminal
+                    )
+            else:
+                print(f"Clear icon not found at: {refresh_icon_path}")
+                self.clear_terminal_button = Button(
+                    self.terminal_frame, text="Clear", command=self.clear_terminal
+                )
+        except Exception as e:
+            print(f"Error preparing clear button: {e}")
+            self.clear_terminal_button = Button(
+                self.terminal_frame, text="Clear", command=self.clear_terminal
+            )
 
         # Configure grid weights to make the terminal expand
         self.terminal_frame.grid_rowconfigure(0, weight=1)
         self.terminal_frame.grid_columnconfigure(0, weight=1)
+
+        # Create a frame that spans the terminal+scrollbar columns so input+icons
+        # have the same combined width as the terminal output area.
+        self.input_frame = Frame(self.terminal_frame)
+        # span only the terminal column (column 0) so input width excludes scrollbar
+        self.input_frame.grid(row=1, column=0, columnspan=1, sticky="we")
+        self.input_frame.grid_columnconfigure(0, weight=1)
+
+        # Entry (expands to fill available width)
+        self.terminal_input = Entry(self.input_frame)
+        self.terminal_input.grid(row=0, column=0, sticky="we", padx=(0, 4))
+        # (focus behavior reverted) do not auto-select on focus
+        # history for inputs
+        self.input_history = []
+        self.history_index = None
+        # Bind Enter to send (pass event through to handler)
+        self.terminal_input.bind("<Return>", self.send_terminal_input)
+        # Bind Up/Down to navigate history
+        self.terminal_input.bind("<Up>", self.history_prev)
+        self.terminal_input.bind("<Down>", self.history_next)
+
+        # Send button (icon or fallback text)
+        try:
+            if hasattr(sys, "_MEIPASS"):
+                icons_base = sys._MEIPASS
+            else:
+                icons_base = os.path.dirname(__file__)
+            send_icon_path = os.path.abspath(
+                os.path.join(icons_base, "assets", "icons", "refresh.png")
+            )
+            if os.path.exists(send_icon_path):
+                try:
+                    self.send_icon = PhotoImage(file=send_icon_path)
+                    try:
+                        icon_h = self.send_icon.height()
+                        icon_w = self.send_icon.width()
+                        max_size = 16
+                        if icon_h > max_size or icon_w > max_size:
+                            factor_h = max(1, int(icon_h / max_size))
+                            factor_w = max(1, int(icon_w / max_size))
+                            factor = max(factor_h, factor_w)
+                            self.send_icon = self.send_icon.subsample(factor, factor)
+                    except Exception:
+                        pass
+
+                    self.send_input_button = Button(
+                        self.input_frame,
+                        image=self.send_icon,
+                        command=self.send_terminal_input,
+                        relief="flat",
+                        bd=0,
+                        highlightthickness=0,
+                    )
+                except Exception as e:
+                    print(f"Failed to load send icon: {e}")
+                    self.send_input_button = Button(
+                        self.input_frame,
+                        text="Send",
+                        command=self.send_terminal_input,
+                    )
+            else:
+                self.send_input_button = Button(
+                    self.input_frame, text="Send", command=self.send_terminal_input
+                )
+        except Exception as e:
+            print(f"Error preparing send button: {e}")
+            self.send_input_button = Button(
+                self.input_frame, text="Send", command=self.send_terminal_input
+            )
+
+        self.send_input_button.grid(row=0, column=1, pady=(0, 4))
+
+        # Stop button (red square icon) next to send
+        try:
+            self.stop_icon = PhotoImage(width=16, height=16)
+            try:
+                self.stop_icon.put("#ff0000", to=(0, 0, 15, 15))
+            except Exception:
+                for x in range(16):
+                    for y in range(16):
+                        try:
+                            self.stop_icon.put("#ff0000", (x, y))
+                        except Exception:
+                            pass
+            self.stop_button = Button(
+                self.input_frame,
+                image=self.stop_icon,
+                command=lambda: self.send_stop(),
+                relief="flat",
+                bd=0,
+                highlightthickness=0,
+            )
+        except Exception as e:
+            print(f"Failed to create stop icon: {e}")
+            self.stop_button = Button(
+                self.input_frame, text="Stop", command=lambda: self.send_stop()
+            )
+
+        self.stop_button.grid(row=0, column=2, padx=(4, 0), pady=(0, 4))
+
+        # Place the clear button below the input_frame and make it span only the terminal
+        self.clear_terminal_button.grid(row=2, column=0, columnspan=1, pady=10)
 
         # Create a frame to hold the content of the apps
         self.app_frame = Frame(self.master)
@@ -230,6 +375,100 @@ class MasterGui:
         # Clear the terminal content
         if self.terminal and self.terminal.winfo_exists():
             self.terminal.delete(1.0, END)
+
+    def send_terminal_input(self, event=None):
+        # Send the text from the terminal input to the USB/serial port
+        try:
+            if hasattr(self, "terminal_input"):
+                cmd = self.terminal_input.get().strip()
+                if cmd:
+                    # Use the USBConnection write_command to send
+                    try:
+                        self.usb_conn.write_command(cmd)
+                    except Exception as e:
+                        self.update_terminal(f"Error sending command: {e}")
+                    # store in history (avoid consecutive duplicates)
+                    try:
+                        if not self.input_history or self.input_history[-1] != cmd:
+                            self.input_history.append(cmd)
+                            # limit history length
+                            if len(self.input_history) > 200:
+                                self.input_history = self.input_history[-200:]
+                    except Exception:
+                        pass
+                    # Keep the input visible after sending; move cursor to end
+                    try:
+                        # keep input visible and focused; do not clear so user can edit
+                        self.terminal_input.icursor(END)
+                        self.terminal_input.focus_set()
+                        # do not select; preserve content
+                    except Exception:
+                        pass
+                    # reset history navigation
+                    self.history_index = None
+        except Exception as e:
+            print(f"Error in send_terminal_input: {e}")
+
+    def history_prev(self, event=None):
+        # Navigate to previous (older) history entry
+        try:
+            if not self.input_history:
+                return "break"
+            if self.history_index is None:
+                # start from the end
+                self.history_index = len(self.input_history) - 1
+            else:
+                if self.history_index > 0:
+                    self.history_index -= 1
+            val = self.input_history[self.history_index]
+            self.terminal_input.delete(0, END)
+            self.terminal_input.insert(0, val)
+            # leave the value in the input field unchanged
+        except Exception as e:
+            print(f"Error navigating history prev: {e}")
+        return "break"
+
+    def history_next(self, event=None):
+        # Navigate to next (newer) history entry
+        try:
+            if not self.input_history:
+                return "break"
+            if self.history_index is None:
+                return "break"
+            # move forward
+            if self.history_index < len(self.input_history) - 1:
+                self.history_index += 1
+                val = self.input_history[self.history_index]
+                self.terminal_input.delete(0, END)
+                self.terminal_input.insert(0, val)
+                # leave the value in the input field unchanged
+            else:
+                # past the last entry -> clear and reset
+                self.history_index = None
+                self.terminal_input.delete(0, END)
+        except Exception as e:
+            print(f"Error navigating history next: {e}")
+        return "break"
+
+    def send_stop(self):
+        # Send the STOP command to the device and show it in the terminal
+        try:
+            # write STOP into the input field so it's visible to the user
+            try:
+                if hasattr(self, "terminal_input"):
+                    self.terminal_input.delete(0, END)
+                    self.terminal_input.insert(0, "STOP")
+                    self.terminal_input.focus_set()
+                    self.terminal_input.icursor(END)
+            except Exception:
+                pass
+
+            try:
+                self.usb_conn.write_command("STOP")
+            except Exception as e:
+                self.update_terminal(f"Error sending STOP command: {e}")
+        except Exception as e:
+            print(f"Error in send_stop: {e}")
 
     def connect(self):
         # Establish a connection to the selected COM port
