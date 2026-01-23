@@ -82,16 +82,16 @@ class TerminalView:
         # remove arrow-key history navigation - combobox provides pull-down
 
         # load send icon if available (prefer send.png)
-        try:
-            base = os.path.dirname(__file__)
-            path = os.path.abspath(os.path.join(base, "assets", "icons", "send.png"))
-            if os.path.exists(path):
+        def _load_image(rel_path, max_size=16):
+            try:
+                base = os.path.dirname(__file__)
+                path = os.path.abspath(os.path.join(base, rel_path))
+                if not os.path.exists(path):
+                    return None
                 img = PhotoImage(file=path)
-                # downscale if too large
                 try:
                     h = img.height()
                     w = img.width()
-                    max_size = 16
                     if h > max_size or w > max_size:
                         factor_h = max(1, int(h / max_size))
                         factor_w = max(1, int(w / max_size))
@@ -99,20 +99,21 @@ class TerminalView:
                         img = img.subsample(factor, factor)
                 except Exception:
                     pass
-                self.send_icon = img
-                self.send_btn = Button(
-                    self.input_frame,
-                    image=self.send_icon,
-                    command=self._on_send,
-                    relief="flat",
-                    bd=0,
-                    highlightthickness=0,
-                )
-            else:
-                self.send_btn = Button(
-                    self.input_frame, text="Send", command=self._on_send
-                )
-        except Exception:
+                return img
+            except Exception:
+                return None
+
+        self.send_icon = _load_image(os.path.join("assets", "icons", "send.png"), 16)
+        if self.send_icon:
+            self.send_btn = Button(
+                self.input_frame,
+                image=self.send_icon,
+                command=self._on_send,
+                relief="flat",
+                bd=0,
+                highlightthickness=0,
+            )
+        else:
             self.send_btn = Button(self.input_frame, text="Send", command=self._on_send)
         self.send_btn.grid(row=0, column=1, pady=(0, 4))
         try:
@@ -121,96 +122,38 @@ class TerminalView:
         except Exception:
             pass
 
-        # stop icon (programmatic red square) next to send
-        # stop icon: prefer assets/icons/stop.png, fallback to programmatic red square or text
-        try:
-            base = os.path.dirname(__file__)
-            stop_path = os.path.abspath(
-                os.path.join(base, "assets", "icons", "stop.png")
+        # stop button: use icon if available, otherwise simple text fallback
+        self.stop_icon = _load_image(os.path.join("assets", "icons", "stop.png"), 16)
+        if self.stop_icon:
+            self.stop_btn = Button(
+                self.input_frame,
+                image=self.stop_icon,
+                command=self._on_stop,
+                relief="flat",
+                bd=0,
+                highlightthickness=0,
             )
-            if os.path.exists(stop_path):
-                img = PhotoImage(file=stop_path)
-                try:
-                    h = img.height()
-                    w = img.width()
-                    max_size = 16
-                    if h > max_size or w > max_size:
-                        factor_h = max(1, int(h / max_size))
-                        factor_w = max(1, int(w / max_size))
-                        factor = max(factor_h, factor_w)
-                        img = img.subsample(factor, factor)
-                except Exception:
-                    pass
-                self.stop_icon = img
-                self.stop_btn = Button(
-                    self.input_frame,
-                    image=self.stop_icon,
-                    command=self._on_stop,
-                    relief="flat",
-                    bd=0,
-                    highlightthickness=0,
-                )
-            else:
-                self.stop_icon = PhotoImage(width=16, height=16)
-                try:
-                    self.stop_icon.put("#ff0000", to=(0, 0, 15, 15))
-                except Exception:
-                    for x in range(16):
-                        for y in range(16):
-                            try:
-                                self.stop_icon.put("#ff0000", (x, y))
-                            except Exception:
-                                pass
-                self.stop_btn = Button(
-                    self.input_frame,
-                    image=self.stop_icon,
-                    command=self._on_stop,
-                    relief="flat",
-                    bd=0,
-                    highlightthickness=0,
-                )
-        except Exception:
-            self.stop_btn = Button(self.input_frame, text="Stop", command=self._on_stop)
+        else:
+            self.stop_btn = Button(self.input_frame, text="STOP", command=self._on_stop)
         self.stop_btn.grid(row=0, column=2, padx=(4, 0), pady=(0, 4))
         try:
-            _Tooltip(self.stop_btn, "Stop")
+            _Tooltip(self.stop_btn, "Send STOP")
         except Exception:
             pass
 
         # clear button below input_frame, spanning the terminal column only
-        try:
-            base = os.path.dirname(__file__)
-            # use trash.png for clear; if missing, fall back to text only
-            trash_path = os.path.abspath(
-                os.path.join(base, "assets", "icons", "trash.png")
+        # clear/trash button: prefer trash.png (slightly smaller max size)
+        self.clear_icon = _load_image(os.path.join("assets", "icons", "trash.png"), 14)
+        if self.clear_icon:
+            self.clear_btn = Button(
+                self.parent,
+                image=self.clear_icon,
+                command=self.clear,
+                relief="flat",
+                bd=0,
+                highlightthickness=0,
             )
-
-            if os.path.exists(trash_path):
-                img = PhotoImage(file=trash_path)
-                try:
-                    h = img.height()
-                    w = img.width()
-                    # prefer a slightly smaller icon for the trash (max 14px)
-                    max_size = 14
-                    if h > max_size or w > max_size:
-                        factor_h = max(1, int(h / max_size))
-                        factor_w = max(1, int(w / max_size))
-                        factor = max(factor_h, factor_w)
-                        img = img.subsample(factor, factor)
-                except Exception:
-                    pass
-                self.clear_icon = img
-                self.clear_btn = Button(
-                    self.parent,
-                    image=self.clear_icon,
-                    command=self.clear,
-                    relief="flat",
-                    bd=0,
-                    highlightthickness=0,
-                )
-            else:
-                self.clear_btn = Button(self.parent, text="Clear", command=self.clear)
-        except Exception:
+        else:
             self.clear_btn = Button(self.parent, text="Clear", command=self.clear)
         # position clear/trash between the terminal (row 0) and the input (row 2)
         # align to the right side of the terminal column
