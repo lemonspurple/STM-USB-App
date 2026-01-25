@@ -3,6 +3,7 @@ import sys
 import time
 import json
 from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame, PhotoImage, filedialog
+import tkinter
 
 
 class ParameterApp:
@@ -22,7 +23,7 @@ class ParameterApp:
         self.frame_edit = LabelFrame(master, text="Parameters")
         self.frame_edit.grid(column=0, row=1, padx=20, pady=15, sticky=W)
 
-        # Add labels and entry fields for parameters
+        # PARAMETERS :: Add labels and entry fields for parameters
         self.parameter_labels_entries = []
         self.parameter_vars = {}
         parameter_keys = [
@@ -47,7 +48,7 @@ class ParameterApp:
 
         self.assets_dir = os.path.join(base_path, "assets", "icons")
 
-        # Parameter key -> icon filename
+        # ICONS:: Parameter key -> icon filename
         self.param_icon_files = {
             "kP": "icon_kP.png",
             "kI": "icon_kI.png",
@@ -95,6 +96,22 @@ class ParameterApp:
         # Saves data 
         self.param_store_path = self._get_param_store_path()
 
+        # TOOLTIPPS 
+        self.param_tooltips = {
+            "kP": "Proportional Gain: Bestimmt, wie stark die Z-Position der Spitze sofort auf eine Abweichung zwischen aktuellem und gewünschtem Tunnelstrom reagiert.",
+            "kI": "Integral Gain: Bestimmt, wie stark sich langsame, anhaltende Unterschiede im Tunnelstrom über Zeit auf die Z-Position auswirken.",
+            "kD": "Derivative Gain: Bestimmt, wie stark die Z-Bewegung auf schnelle Änderungen des Tunnelstroms reagiert und diese dämpft.",
+            "targetNa": "Target Tunnel Current (nA): Legt den Tunnelstromwert fest, um den herum die Messung stattfindet.",
+            "toleranceNa": "Tunnel Current Tolerance (nA): Definiert den Bereich um den Ziel-Tunnelstrom (targetNa) der ebenfalls als Tunneling gewertet wird.",
+            "startX": "(BETA) Start X Position: Gibt die X-Position an, an der der Raster-Scan beginnt.",
+            "startY": "(BETA) Start Y Position: Gibt die Y-Position an, an der der Raster-Scan beginnt.",
+            "measureMs": "Measurement Time (ms): Legt fest, wie lange der Tunnelstrom in Millisekunden an jedem Rasterpunkt gemessen und gemittelt wird.",
+            "direction": "Scan Direction: Legt die Richtung fest, in der der Raster-Scan über die X-Achse durchgeführt wird.",
+            "maxX": "Maximum X Coordinate: Bestimmt die maximale X-Position, bis zu der der Raster-Scan ausgeführt wird.",
+            "maxY": "Maximum Y Coordinate: Bestimmt die maximale Y-Position, bis zu der der Raster-Scan ausgeführt wird.",
+            "multiplicator": "(BETA) Z-Scaling Factor: Skaliert, wie stark Änderungen der Regelung die Z-Piezo-Spannung beeinflussen.",
+        }
+
         for i, key in enumerate(parameter_keys):
             icon_img = None
             icon_filename = self.param_icon_files.get(key)
@@ -111,10 +128,16 @@ class ParameterApp:
 
             self.icons[key] = icon_img
 
-            icon_label = Label(self.frame_edit, image=icon_img)
-            parameter_label = Label(self.frame_edit, text=f"{key}:")
+            icon_label = Label(self.frame_edit, image=icon_img) ## Icon Label ##
+
+            parameter_label = Label(self.frame_edit, text=f"{key}:") ## Parameter Itself ##
             parameter_var = StringVar()
             parameter_entry = Entry(self.frame_edit, textvariable=parameter_var)
+
+            tip = self.param_tooltips.get(key, key) ## Tooltip text ##
+            ToolTip(icon_label, tip)
+            ToolTip(parameter_label, tip)
+            ToolTip(parameter_entry, tip)
 
             self.parameter_labels_entries.append((icon_label, parameter_label, parameter_entry))
             self.parameter_vars[key] = parameter_var
@@ -157,7 +180,7 @@ class ParameterApp:
         self.btn_back = Button(
             self.frame_actions, text="Exit", command=self.return_to_main
         )
-        self.btn_back.grid(column=2, row=0, padx=96, pady=1, sticky=E)
+        self.btn_back.grid(column=2, row=0, padx=75, pady=1, sticky=E)
 
 
     def _get_param_store_path(self):
@@ -247,3 +270,35 @@ class ParameterApp:
             self.parameter[key] = value
             if key in self.parameter_vars:
                 self.parameter_vars[key].set(value)
+
+## Tooltips for parameters ##
+import tkinter as tk
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tip = None
+        widget.bind("<Enter>", self.show, add="+")
+        widget.bind("<Leave>", self.hide, add="+")
+
+
+    def show(self, event=None):
+        if self.tip or not self.text:
+            return
+        self.tip = tk.Toplevel(self.widget)
+        self.tip.wm_overrideredirect(True)  # kein Fensterrahmen
+        self.tip.attributes("-topmost", True)
+
+        label = tk.Label(self.tip, text=self.text, borderwidth=1, relief="solid", padx=6, pady=4)
+        label.pack()
+
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + 20
+        self.tip.geometry(f"+{x}+{y}")
+
+    def hide(self, event=None):
+        if self.tip:
+            self.tip.destroy()
+            self.tip = None
+
+
