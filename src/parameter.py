@@ -98,18 +98,18 @@ class ParameterApp:
 
         # TOOLTIPPS 
         self.param_tooltips = {
-            "kP": "Test",
-            "kI": "Test",
-            "kD": "Test",
-            "targetNa": "",
-            "toleranceNa": "",
-            "startX": "",
-            "startY": "",
-            "measureMs": "",
-            "direction": "",
-            "maxX": "",
-            "maxY": "",
-            "multiplicator": "",
+            "kP": "Proportional Gain: Bestimmt, wie stark die Z-Position der Spitze sofort auf eine Abweichung zwischen aktuellem und gewünschtem Tunnelstrom reagiert.",
+            "kI": "Integral Gain: Bestimmt, wie stark sich langsame, anhaltende Unterschiede im Tunnelstrom über Zeit auf die Z-Position auswirken.",
+            "kD": "Derivative Gain: Bestimmt, wie stark die Z-Bewegung auf schnelle Änderungen des Tunnelstroms reagiert und diese dämpft.",
+            "targetNa": "Target Tunnel Current (nA): Legt den Tunnelstromwert fest, um den herum die Messung stattfindet.",
+            "toleranceNa": "Tunnel Current Tolerance (nA): Definiert den Bereich um den Ziel-Tunnelstrom (targetNa) der ebenfalls als Tunneling gewertet wird.",
+            "startX": "(BETA) Start X Position: Gibt die X-Position an, an der der Raster-Scan beginnt.",
+            "startY": "(BETA) Start Y Position: Gibt die Y-Position an, an der der Raster-Scan beginnt.",
+            "measureMs": "Measurement Time (ms): Legt fest, wie lange der Tunnelstrom in Millisekunden an jedem Rasterpunkt gemessen und gemittelt wird.",
+            "direction": "Scan Direction: Legt die Richtung fest, in der der Raster-Scan über die X-Achse durchgeführt wird.",
+            "maxX": "Maximum X Coordinate: Bestimmt die maximale X-Position, bis zu der der Raster-Scan ausgeführt wird.",
+            "maxY": "Maximum Y Coordinate: Bestimmt die maximale Y-Position, bis zu der der Raster-Scan ausgeführt wird.",
+            "multiplicator": "(BETA) Z-Scaling Factor: Skaliert, wie stark Änderungen der Regelung die Z-Piezo-Spannung beeinflussen.",
         }
 
         for i, key in enumerate(parameter_keys):
