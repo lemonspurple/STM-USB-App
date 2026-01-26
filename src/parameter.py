@@ -96,20 +96,20 @@ class ParameterApp:
         # Saves data 
         self.param_store_path = self._get_param_store_path()
 
-        # TOOLTIPPS 
+        # TOOLTIPS 
         self.param_tooltips = {
-            "kP": "Proportional Gain: Bestimmt, wie stark die Z-Position der Spitze sofort auf eine Abweichung zwischen aktuellem und gewünschtem Tunnelstrom reagiert.",
-            "kI": "Integral Gain: Bestimmt, wie stark sich langsame, anhaltende Unterschiede im Tunnelstrom über Zeit auf die Z-Position auswirken.",
-            "kD": "Derivative Gain: Bestimmt, wie stark die Z-Bewegung auf schnelle Änderungen des Tunnelstroms reagiert und diese dämpft.",
-            "targetNa": "Target Tunnel Current (nA): Legt den Tunnelstromwert fest, um den herum die Messung stattfindet.",
-            "toleranceNa": "Tunnel Current Tolerance (nA): Definiert den Bereich um den Ziel-Tunnelstrom (targetNa) der ebenfalls als Tunneling gewertet wird.",
-            "startX": "(BETA) Start X Position: Gibt die X-Position an, an der der Raster-Scan beginnt.",
-            "startY": "(BETA) Start Y Position: Gibt die Y-Position an, an der der Raster-Scan beginnt.",
-            "measureMs": "Measurement Time (ms): Legt fest, wie lange der Tunnelstrom in Millisekunden an jedem Rasterpunkt gemessen und gemittelt wird.",
-            "direction": "Scan Direction: Legt die Richtung fest, in der der Raster-Scan über die X-Achse durchgeführt wird.",
-            "maxX": "Maximum X Coordinate: Bestimmt die maximale X-Position, bis zu der der Raster-Scan ausgeführt wird.",
-            "maxY": "Maximum Y Coordinate: Bestimmt die maximale Y-Position, bis zu der der Raster-Scan ausgeführt wird.",
-            "multiplicator": "(BETA) Z-Scaling Factor: Skaliert, wie stark Änderungen der Regelung die Z-Piezo-Spannung beeinflussen.",
+            "kP": "Proportional Gain: Defines how strongly the probe Z position reacts immediately to a deviation between the current and the target tunnel current.",
+            "kI": "Integral Gain: Defines how strongly slow, persistent differences in the tunnel current influence the Z position over time.",
+            "kD": "Derivative Gain: Defines how strongly the Z movement reacts to rapid changes in the tunnel current and helps dampen them.",
+            "targetNa": "Target Tunnel Current (nA): Sets the tunnel current value around which the measurement is performed.",
+            "toleranceNa": "Tunnel Current Tolerance (nA): Defines the range around the target tunnel current (targetNa) that is still considered valid tunneling.",
+            "startX": "(BETA) Start X Position: Specifies the X position at which the raster scan begins.",
+            "startY": "(BETA) Start Y Position: Specifies the Y position at which the raster scan begins.",
+            "measureMs": "Measurement Time (ms): Defines how long the tunnel current is measured and averaged at each raster point, in milliseconds.",
+            "direction": "Scan Direction: Defines the direction in which the raster scan is performed along the X axis.",
+            "maxX": "Maximum X Coordinate: Defines the maximum X position up to which the raster scan is executed.",
+            "maxY": "Maximum Y Coordinate: Defines the maximum Y position up to which the raster scan is executed.",
+            "multiplicator": "(BETA) Z Scaling Factor: Scales how strongly control adjustments affect the Z piezo voltage.",
         }
 
         for i, key in enumerate(parameter_keys):
