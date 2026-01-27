@@ -16,6 +16,7 @@ from tkinter import (
     messagebox,
 )
 import tkinter
+from gui.tooltip import ToolTip
 
 
 class ParameterApp:
@@ -93,38 +94,14 @@ class ParameterApp:
             "measureMs": "icon_measureMs.png",
             "direction": "icon_direction.png",
             "maxX": "icon_startX.png",
-            "maxY": "icon_startY.png",
+            "maxY": "icon_startX.png",
             "multiplicator": "icon_multiplicator.png",
             "save": "icon_save.png",
             "load": "icon_load.png",
         }
-
-        # Cache PhotoImages to avoid garbage collection
+        # Cache PhotoImages to avoid garbage collection and build UI pieces
         self.icons = {}
-        # loading parameter icons
-        self.fallback_icon = None
-        fallback_path = os.path.join(self.assets_dir, "icon_unknown.png")
-        if os.path.exists(fallback_path):
-            try:
-                self.fallback_icon = PhotoImage(file=fallback_path)
-            except Exception:
-                self.fallback_icon = None
-        # loading ui icons
-        self.ui_icons = {}
-        for ui_key in ("save", "load"):
-            icon_img = None
-            icon_filename = self.param_icon_files.get(ui_key)
-            if icon_filename:
-                icon_path = os.path.join(self.assets_dir, icon_filename)
-                if os.path.exists(icon_path):
-                    try:
-                        icon_img = PhotoImage(file=icon_path)
-                    except Exception:
-                        icon_img = None
-            if icon_img is None:
-                icon_img = self.fallback_icon
-            self.ui_icons[ui_key] = icon_img
-
+        self._load_icons()
         # Saves data
         self.param_store_path = self._get_param_store_path()
 
@@ -144,6 +121,44 @@ class ParameterApp:
             "multiplicator": "(BETA) Z Scaling Factor: Scales how strongly control adjustments affect the Z piezo voltage.",
         }
 
+        # build parameter entry rows and action frames
+        self._create_parameter_rows()
+        self._create_action_frames()
+
+    def _get_param_store_path(self):
+        base_dir = os.path.join(os.path.expanduser("~"), ".stm-usb-app")
+        os.makedirs(base_dir, exist_ok=True)
+        return os.path.join(base_dir, "parameters.json")
+
+    def _load_icons(self):
+        """Load fallback and UI icons into `self.fallback_icon` and `self.ui_icons`."""
+        self.fallback_icon = None
+        fallback_path = os.path.join(self.assets_dir, "icon_unknown.png")
+        if os.path.exists(fallback_path):
+            try:
+                self.fallback_icon = PhotoImage(file=fallback_path)
+            except Exception:
+                self.fallback_icon = None
+
+        # loading ui icons (save/load)
+        self.ui_icons = {}
+        for ui_key in ("save", "load"):
+            icon_img = None
+            icon_filename = self.param_icon_files.get(ui_key)
+            if icon_filename:
+                icon_path = os.path.join(self.assets_dir, icon_filename)
+                if os.path.exists(icon_path):
+                    try:
+                        icon_img = PhotoImage(file=icon_path)
+                    except Exception:
+                        icon_img = None
+            if icon_img is None:
+                icon_img = self.fallback_icon
+            self.ui_icons[ui_key] = icon_img
+
+    def _create_parameter_rows(self):
+        """Create labels, entries, tooltips and grid them for all parameters."""
+        self.parameter_labels_entries = []
         for i, key in enumerate(self.parameter_keys):
             icon_img = None
             icon_filename = self.param_icon_files.get(key)
@@ -151,7 +166,7 @@ class ParameterApp:
                 icon_path = os.path.join(self.assets_dir, icon_filename)
                 if os.path.exists(icon_path):
                     try:
-                        icon_img = PhotoImage(file=icon_path)  # failsafe
+                        icon_img = PhotoImage(file=icon_path)
                     except Exception:
                         icon_img = None
 
@@ -160,13 +175,24 @@ class ParameterApp:
 
             self.icons[key] = icon_img
 
-            icon_label = Label(self.frame_edit, image=icon_img)  ## Icon Label ##
-
-            parameter_label = Label(
-                self.frame_edit, text=f"{key}:"
-            )  ## Parameter Itself ##
+            icon_label = Label(self.frame_edit, image=icon_img)
+            parameter_label = Label(self.frame_edit, text=f"{key}:")
             parameter_var = StringVar()
             parameter_entry = Entry(self.frame_edit, textvariable=parameter_var)
+
+            # trace changes to enable/disable Apply button
+            try:
+                # modern tkinter uses trace_add
+                parameter_var.trace_add(
+                    "write", lambda *a, k=key: self._on_param_var_change(k)
+                )
+            except Exception:
+                try:
+                    parameter_var.trace(
+                        "w", lambda *a, k=key: self._on_param_var_change(k)
+                    )
+                except Exception:
+                    pass
 
             # keep entry reference for validation
             self.parameter_entries[key] = parameter_entry
@@ -184,7 +210,7 @@ class ParameterApp:
                 "<FocusOut>", lambda e, k=key: self._validate_field(k, live=False)
             )
 
-            tip = self.param_tooltips.get(key, key)  ## Tooltip text ##
+            tip = self.param_tooltips.get(key, key)
             ToolTip(icon_label, tip)
             ToolTip(parameter_label, tip)
             ToolTip(parameter_entry, tip)
@@ -200,8 +226,10 @@ class ParameterApp:
             label.grid(column=1, row=i, padx=(0, 6), pady=1, sticky=W)
             entry.grid(column=2, row=i, padx=1, pady=1)
 
+    def _create_action_frames(self):
+
         # place Save / Load below the LabelFrame
-        self.frame_files = Frame(master)
+        self.frame_files = Frame(self.master)
         self.frame_files.grid(column=0, row=2, padx=20, pady=(1, 12), sticky=W)
 
         self.frame_actions = Frame(self.frame_parameter)
@@ -226,33 +254,73 @@ class ParameterApp:
             command=self.load_parameters_from_file,
         )
         self.btn_load_local.grid(column=1, row=0, padx=5, pady=5, sticky=W)
+
         # Adding Exit, Apply, Default icons (left-to-right)
         self.btn_back = Button(
             self.frame_actions, text="Close", command=self.return_to_main
         )
         # add extra right padding so there's clear space before the Apply button
-        self.btn_back.grid(column=0, row=0, padx=(1, 100), pady=1, sticky=W)
+        self.btn_back.grid(column=0, row=0, padx=(1, 20), pady=1, sticky=W)
 
         self.btn_apply_parameter_setting = Button(
-            self.frame_actions, text="Apply", command=self.apply_parameters
+            self.frame_actions, text="Save to microscope", command=self.apply_parameters
         )
         self.btn_apply_parameter_setting.grid(column=1, row=0, padx=5, pady=1, sticky=W)
+        ToolTip(self.btn_apply_parameter_setting, "Save settings to microscope.")
+        # default disabled until a change is detected
+        try:
+            self.btn_apply_parameter_setting.config(state="disabled")
+        except Exception:
+            pass
 
         self.btn_set_parameter_default = Button(
             self.frame_actions, text="Default", command=self.set_default_parameters
         )
         self.btn_set_parameter_default.grid(column=2, row=0, padx=5, pady=1, sticky=W)
-
-    def _get_param_store_path(self):
-        base_dir = os.path.join(os.path.expanduser("~"), ".stm-usb-app")
-        os.makedirs(base_dir, exist_ok=True)
-        return os.path.join(base_dir, "parameters.json")
+        ToolTip(self.btn_set_parameter_default, "Save default settings in microscope.")
 
     def _collect_parameters_from_ui(self):
         data = {}
         for key, var in self.parameter_vars.items():
             data[key] = var.get()
         return data
+
+    def _fmt_for_compare(self, key, val):
+        rule = self.validation_rules.get(key)
+        if rule and rule[0] == "float":
+            try:
+                return f"{float(val):.3f}"
+            except Exception:
+                return str(val)
+        else:
+            return str(val)
+
+    def _on_param_var_change(self, key=None):
+        # triggered when any StringVar changes
+        self._update_apply_enabled()
+
+    def _update_apply_enabled(self):
+        """Enable Apply if any UI value differs from last known device parameter values."""
+        ui_data = self._collect_parameters_from_ui()
+        changed = False
+        for key in self.parameter_keys:
+            ui_val = ui_data.get(key, "")
+            stored_val = self.parameter.get(key)
+            if stored_val is None:
+                # unknown on device -> consider changed so user can send
+                changed = True
+                break
+            if self._fmt_for_compare(key, ui_val) != self._fmt_for_compare(
+                key, stored_val
+            ):
+                changed = True
+                break
+
+        try:
+            state = "normal" if changed else "disabled"
+            self.btn_apply_parameter_setting.config(state=state)
+        except Exception:
+            pass
 
     def _apply_parameters_to_ui(self, data: dict):
         for key, value in data.items():
@@ -268,6 +336,11 @@ class ParameterApp:
                 else:
                     display = str(value)
                 self.parameter_vars[key].set(display)
+        # after applying UI values, update Apply button state
+        try:
+            self._update_apply_enabled()
+        except Exception:
+            pass
 
     def save_parameters_to_file(self):
         path = filedialog.asksaveasfilename(
@@ -324,7 +397,40 @@ class ParameterApp:
                     pass
             return
 
-        parameters = [entry.get() for _, _, entry in self.parameter_labels_entries]
+        # collect current UI values
+        ui_data = self._collect_parameters_from_ui()
+
+        def _fmt_for_compare(key, val):
+            rule = self.validation_rules.get(key)
+            if rule and rule[0] == "float":
+                try:
+                    return f"{float(val):.3f}"
+                except Exception:
+                    return str(val)
+            else:
+                return str(val)
+
+        # determine whether any parameter changed compared to last known device values
+        changed = False
+        for key in self.parameter_keys:
+            ui_val = ui_data.get(key, "")
+            stored_val = self.parameter.get(key)
+            if stored_val is None:
+                # if device never reported this key, treat as changed
+                changed = True
+                break
+            if _fmt_for_compare(key, ui_val) != _fmt_for_compare(key, stored_val):
+                changed = True
+                break
+
+        if not changed:
+            try:
+                messagebox.showinfo("No changes", "No parameter was changed.")
+            except Exception:
+                pass
+            return
+
+        parameters = [ui_data.get(k, "") for k in self.parameter_keys]
         sendstring = f"PARAMETER,{','.join(parameters)}"
         try:
             self.write_command(sendstring)
@@ -455,37 +561,8 @@ class ParameterApp:
                 else:
                     display = value
                 self.parameter_vars[key].set(display)
-
-
-## Tooltips for parameters ##
-import tkinter as tk
-
-
-class ToolTip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tip = None
-        widget.bind("<Enter>", self.show, add="+")
-        widget.bind("<Leave>", self.hide, add="+")
-
-    def show(self, event=None):
-        if self.tip or not self.text:
-            return
-        self.tip = tk.Toplevel(self.widget)
-        self.tip.wm_overrideredirect(True)  # kein Fensterrahmen
-        self.tip.attributes("-topmost", True)
-
-        label = tk.Label(
-            self.tip, text=self.text, borderwidth=1, relief="solid", padx=6, pady=4
-        )
-        label.pack()
-
-        x = self.widget.winfo_rootx() + 20
-        y = self.widget.winfo_rooty() + 20
-        self.tip.geometry(f"+{x}+{y}")
-
-    def hide(self, event=None):
-        if self.tip:
-            self.tip.destroy()
-            self.tip = None
+                # device reported value now matches UI; update Apply button
+                try:
+                    self._update_apply_enabled()
+                except Exception:
+                    pass
