@@ -38,6 +38,27 @@ class ParameterApp:
         # PARAMETERS :: Add labels and entry fields for parameters
         self.parameter_labels_entries = []
         self.parameter_vars = {}
+        # store Entry widgets for per-field validation
+        self.parameter_entries = {}
+        # store each Entry's original background to restore after validation
+        self.entry_default_bg = {}
+
+        # validation rules: key -> (type, min, max, choices)
+        # type is 'int'|'float'|'str'
+        self.validation_rules = {
+            "kP": ("float", 0.0, 0.5, None),
+            "kI": ("float", 0.0, 0.5, None),
+            "kD": ("float", 0.0, 0.5, None),
+            "targetNa": ("float", 0.0, 5, None),
+            "toleranceNa": ("float", 0, 0.5, None),
+            "startX": ("int", 1, 199, None),
+            "startY": ("int", 1, 199, None),
+            "measureMs": ("int", 1, 10, None),
+            "direction": ("int", 0, 1, None),
+            "maxX": ("int", 1, 199, None),
+            "maxY": ("int", 1, 199, None),
+            "multiplicator": ("float", None, None, None),
+        }
         parameter_keys = [
             "kP",
             "kI",
@@ -117,7 +138,7 @@ class ParameterApp:
             "startX": "Start X Position: Specifies the X position at which the raster scan begins. Must be less than maxX.",
             "startY": "Start Y Position: Specifies the Y position at which the raster scan begins. Must be less than maxY.",
             "measureMs": "Measurement Time (ms): Defines how long the tunnel current is measured and averaged at each raster point, in milliseconds. Shortest time is 1ms.",
-            "direction": "Scan Direction: Defines the direction in which the raster scan is performed along the X axis.",
+            "direction": "(BETA) Scan Direction: Defines the direction in which the raster scan is performed along the X axis.",
             "maxX": "Maximum X Coordinate: Defines the maximum X position up to which the raster scan is executed. Value range: 1..199.",
             "maxY": "Maximum Y Coordinate: Defines the maximum Y position up to which the raster scan is executed. Value range: 1..199.",
             "multiplicator": "(BETA) Z Scaling Factor: Scales how strongly control adjustments affect the Z piezo voltage.",
@@ -146,6 +167,22 @@ class ParameterApp:
             )  ## Parameter Itself ##
             parameter_var = StringVar()
             parameter_entry = Entry(self.frame_edit, textvariable=parameter_var)
+
+            # keep entry reference for validation
+            self.parameter_entries[key] = parameter_entry
+            # capture default background color (used to restore after valid input)
+            try:
+                self.entry_default_bg[key] = parameter_entry.cget("background")
+            except Exception:
+                self.entry_default_bg[key] = None
+
+            # bind validation handlers: live visual feedback and focus-out dialog
+            parameter_entry.bind(
+                "<KeyRelease>", lambda e, k=key: self._validate_field(k, live=True)
+            )
+            parameter_entry.bind(
+                "<FocusOut>", lambda e, k=key: self._validate_field(k, live=False)
+            )
 
             tip = self.param_tooltips.get(key, key)  ## Tooltip text ##
             ToolTip(icon_label, tip)
@@ -217,7 +254,17 @@ class ParameterApp:
     def _apply_parameters_to_ui(self, data: dict):
         for key, value in data.items():
             if key in self.parameter_vars:
-                self.parameter_vars[key].set(str(value))
+                # Format floats to 3 decimal places for display
+                rule = self.validation_rules.get(key)
+                if rule and rule[0] == "float":
+                    try:
+                        f = float(value)
+                        display = f"{f:.3f}"
+                    except Exception:
+                        display = str(value)
+                else:
+                    display = str(value)
+                self.parameter_vars[key].set(display)
 
     def save_parameters_to_file(self):
         path = filedialog.asksaveasfilename(
@@ -317,6 +364,65 @@ class ParameterApp:
             error_message = f"ERROR in set_default_parameters {e}"
             print(error_message)
 
+    def _validate_field(self, key, live=False):
+        """Validate a single field by `key`.
+        - live=True: only visual feedback (don't show dialogs for empties)
+        - live=False: show messagebox for errors on focus out
+        Returns True if valid, False otherwise.
+        """
+        entry = self.parameter_entries.get(key)
+        var = self.parameter_vars.get(key)
+        if entry is None or var is None:
+            return True
+
+        val = var.get().strip()
+        rule = self.validation_rules.get(key)
+        default_bg = self.entry_default_bg.get(key, entry.cget("background"))
+
+        if not rule:
+            entry.config(background=default_bg)
+            return True
+
+        typ, minv, maxv, choices = rule
+
+        # empty handling
+        if val == "":
+            # live: don't nag, just neutral color
+            if live:
+                entry.config(background=default_bg)
+                return True
+            else:
+                entry.config(background="#ffcccc")
+                messagebox.showerror("Parameter error", f"{key}: value required")
+                return False
+
+        try:
+            if typ == "int":
+                num = int(val)
+            elif typ == "float":
+                num = float(val)
+            else:
+                num = val
+
+            if typ in ("int", "float"):
+                if minv is not None and num < minv:
+                    raise ValueError(f"{key} must be >= {minv}")
+                if maxv is not None and num > maxv:
+                    raise ValueError(f"{key} must be <= {maxv}")
+
+            if choices is not None and num not in choices:
+                raise ValueError(f"{key} must be one of {choices}")
+
+        except Exception as e:
+            entry.config(background="#ffcccc")
+            if not live:
+                messagebox.showerror("Parameter error", f"{key}: {e}")
+            return False
+
+        # valid
+        entry.config(background=default_bg)
+        return True
+
     def update_data(self, message):
         """Updates the Parameter interface with new data"""
         data = message.split(",")
@@ -325,7 +431,17 @@ class ParameterApp:
             value = data[2]
             self.parameter[key] = value
             if key in self.parameter_vars:
-                self.parameter_vars[key].set(value)
+                # If parameter is defined as float, format for display
+                rule = self.validation_rules.get(key)
+                if rule and rule[0] == "float":
+                    try:
+                        f = float(value)
+                        display = f"{f:.3f}"
+                    except Exception:
+                        display = value
+                else:
+                    display = value
+                self.parameter_vars[key].set(display)
 
 
 ## Tooltips for parameters ##
