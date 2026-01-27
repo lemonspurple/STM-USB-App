@@ -32,7 +32,7 @@ class SinusApp:
         self.button_frame.pack(fill="x", pady=10)
 
         self.btn_stop = Button(
-            self.button_frame, text="Stop", command=self.wrapper_return_to_main
+            self.button_frame, text="Close", command=self.wrapper_return_to_main
         )
         self.btn_stop.pack(side="left", padx=10)
 

@@ -49,7 +49,7 @@ class MeasureApp:
 
         # Create a Back button to return to the main interface
         self.btn_back = Button(
-            self.frame, text="Stop - ESC", command=self.wrapper_return_to_main
+            self.frame, text="Close", command=self.wrapper_return_to_main
         )
         self.btn_back.pack(pady=10)
 

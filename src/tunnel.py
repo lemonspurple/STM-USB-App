@@ -43,7 +43,7 @@ class TunnelApp:
 
         # Create a Back button to return to the main interface
         self.btn_back = Button(
-            self.button_frame, text="STOP - ESC", command=self.wrapper_return_to_main
+            self.button_frame, text="Close", command=self.wrapper_return_to_main
         )
         self.btn_back.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
