@@ -51,13 +51,13 @@ class MeasureApp:
         self.btn_back = Button(
             self.frame, text="Close", command=self.wrapper_return_to_main
         )
-        self.btn_back.pack(pady=10)
+        self.btn_back.pack(anchor="w", padx=10, pady=10)
 
         # Create a Reset Rotation button to reset the 3D plot rotation
         self.btn_reset_rotation = Button(
             self.frame, text="Reset Rotation", command=self.reset_rotation
         )
-        self.btn_reset_rotation.pack(pady=10)
+        self.btn_reset_rotation.pack(anchor="w", padx=10, pady=10)
         self.btn_reset_rotation.pack_forget()  # Initially hide the Reset Rotation button
 
         # Initialize plotting and file storage
@@ -237,7 +237,7 @@ class MeasureApp:
     def on_plot_hover(self, event):
         # Show the Reset Rotation button only if the plot has been rotated
         if self.ax.elev != self.initial_elev or self.ax.azim != self.initial_azim:
-            self.btn_reset_rotation.pack(pady=10)
+            self.btn_reset_rotation.pack(anchor="w", padx=10, pady=10)
 
     def _init_plot(self):
         """Initialize Matplotlib 3D figure, axes and the Tk canvas."""

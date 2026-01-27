@@ -17,7 +17,7 @@ class AdjustApp:
         self.btn_back = Button(
             self.frame, text="Close", command=self.wrapper_return_to_main
         )
-        self.btn_back.pack(pady=10)
+        self.btn_back.pack(anchor="w", padx=10, pady=10)
 
         # Create a LabelFrame for Voltage
         self.voltage_frame = LabelFrame(self.frame, text="ADC Tunnel")

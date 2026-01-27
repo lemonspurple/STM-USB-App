@@ -23,7 +23,7 @@ class SinusApp:
         self.return_to_main = return_to_main
         self.is_active = True
 
-        # main container
+        # main containerDAC/ADC
         self.frame = Frame(master)
         self.frame.pack(fill="both", expand=True)
 

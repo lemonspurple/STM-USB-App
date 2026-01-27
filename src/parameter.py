@@ -27,9 +27,9 @@ class ParameterApp:
         # Initialize the parameter dictionary
         self.parameter = {}
 
-        # Create a frame for the ParameterApp
+        # Create a frame for the ParameterApp (place above the LabelFrame)
         self.frame_parameter = Frame(master)
-        self.frame_parameter.grid(column=0, row=2, padx=20, pady=(12, 1), sticky=W)
+        self.frame_parameter.grid(column=0, row=0, padx=20, pady=(12, 1), sticky=W)
 
         # Create a LabelFrame for editing parameters
         self.frame_edit = LabelFrame(master, text="Parameters")
@@ -200,11 +200,13 @@ class ParameterApp:
             label.grid(column=1, row=i, padx=(0, 6), pady=1, sticky=W)
             entry.grid(column=2, row=i, padx=1, pady=1)
 
-        self.frame_files = Frame(self.frame_parameter)
-        self.frame_files.grid(column=0, row=0, sticky=W)
+        # place Save / Load below the LabelFrame
+        self.frame_files = Frame(master)
+        self.frame_files.grid(column=0, row=2, padx=20, pady=(1, 12), sticky=W)
 
         self.frame_actions = Frame(self.frame_parameter)
-        self.frame_actions.grid(column=0, row=1, sticky=W)
+        # place actions on top
+        self.frame_actions.grid(column=0, row=0, sticky=W)
 
         # Adding Save / Load icons
         self.btn_save_local = Button(
@@ -224,21 +226,22 @@ class ParameterApp:
             command=self.load_parameters_from_file,
         )
         self.btn_load_local.grid(column=1, row=0, padx=5, pady=5, sticky=W)
-        # Adding Apply, Default, Exit icons
+        # Adding Exit, Apply, Default icons (left-to-right)
+        self.btn_back = Button(
+            self.frame_actions, text="Close", command=self.return_to_main
+        )
+        # add extra right padding so there's clear space before the Apply button
+        self.btn_back.grid(column=0, row=0, padx=(1, 100), pady=1, sticky=W)
+
         self.btn_apply_parameter_setting = Button(
             self.frame_actions, text="Apply", command=self.apply_parameters
         )
-        self.btn_apply_parameter_setting.grid(column=0, row=0, padx=1, pady=1, sticky=W)
+        self.btn_apply_parameter_setting.grid(column=1, row=0, padx=5, pady=1, sticky=W)
 
         self.btn_set_parameter_default = Button(
             self.frame_actions, text="Default", command=self.set_default_parameters
         )
-        self.btn_set_parameter_default.grid(column=1, row=0, padx=5, pady=1, sticky=W)
-
-        self.btn_back = Button(
-            self.frame_actions, text="Exit", command=self.return_to_main
-        )
-        self.btn_back.grid(column=2, row=0, padx=75, pady=1, sticky=E)
+        self.btn_set_parameter_default.grid(column=2, row=0, padx=5, pady=1, sticky=W)
 
     def _get_param_store_path(self):
         base_dir = os.path.join(os.path.expanduser("~"), ".stm-usb-app")
