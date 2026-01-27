@@ -40,7 +40,19 @@ class USBConnection:
             return False
         except SerialException as e:
             self.is_connected = False
-            error_msg = f"Serial connection error on port {self.port}: {e}"
+            msg = str(e)
+            suggestions = (
+                "Possible causes: another program has the port open (serial monitor, IDE), "
+                "insufficient permissions, or a driver/OS issue. Try:\n"
+                " - Close other serial programs (Arduino IDE, PuTTY, VSCode serial monitor)\n"
+                " - Run this program as Administrator\n"
+                " - Reconnect the USB device or reboot the PC\n"
+                " - Check Device Manager for driver issues and the COM number\n"
+                " - Use Sysinternals 'handle.exe -a COM8' to find which process holds the port"
+            )
+            error_msg = (
+                f"Serial connection error on port {self.port}: {msg}\n{suggestions}"
+            )
             self.update_terminal(error_msg)
             print(f"ERROR establish_connection: {error_msg}")
             return False

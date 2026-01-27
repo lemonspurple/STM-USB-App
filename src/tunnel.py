@@ -44,7 +44,7 @@ class TunnelApp:
 
         # Add a Freeze button to toggle the restart loop
         self.btn_freeze = Button(
-            self.button_frame, text="Stop", command=self.toggle_freeze
+            self.button_frame, text="Stop cycle", command=self.toggle_freeze
         )
         self.btn_freeze.grid(row=0, column=1, padx=10, pady=10, sticky="e")
 
@@ -143,7 +143,7 @@ class TunnelApp:
         self.is_frozen = not self.is_frozen
         print(f"Freeze state toggled. is_frozen: {self.is_frozen}")  # Debugging
         if self.is_frozen:
-            self.btn_freeze.config(text="Run")
+            self.btn_freeze.config(text="Run cycle")
             # Cancel the scheduled restart if it exists
             if self.after_id is not None:
                 self.master.after_cancel(self.after_id)
@@ -192,7 +192,7 @@ class TunnelApp:
                         print("Tunnel loop is frozen. Restart skipped.")  # Debugging
                         # Show the "STOP - ESC" button only when the loop is stopped
                         self.btn_back.grid()
-                        self.btn_freeze.config(text="Run")
+                        self.btn_freeze.config(text="Run Cycle")
                     return True
 
                 elif len(data) >= 4:

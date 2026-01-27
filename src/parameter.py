@@ -2,7 +2,19 @@ import os
 import sys
 import time
 import json
-from tkinter import Frame, Label, Button, Entry, StringVar, W, E, LabelFrame, PhotoImage, filedialog
+from tkinter import (
+    Frame,
+    Label,
+    Button,
+    Entry,
+    StringVar,
+    W,
+    E,
+    LabelFrame,
+    PhotoImage,
+    filedialog,
+    messagebox,
+)
 import tkinter
 
 
@@ -62,7 +74,6 @@ class ParameterApp:
             "maxX": "icon_startX.png",
             "maxY": "icon_startY.png",
             "multiplicator": "icon_multiplicator.png",
-
             "save": "icon_save.png",
             "load": "icon_load.png",
         }
@@ -93,22 +104,22 @@ class ParameterApp:
                 icon_img = self.fallback_icon
             self.ui_icons[ui_key] = icon_img
 
-        # Saves data 
+        # Saves data
         self.param_store_path = self._get_param_store_path()
 
-        # TOOLTIPS 
+        # TOOLTIPS
         self.param_tooltips = {
             "kP": "Proportional Gain: Defines how strongly the probe Z position reacts immediately to a deviation between the current and the target tunnel current.",
             "kI": "Integral Gain: Defines how strongly slow, persistent differences in the tunnel current influence the Z position over time.",
             "kD": "Derivative Gain: Defines how strongly the Z movement reacts to rapid changes in the tunnel current and helps dampen them.",
             "targetNa": "Target Tunnel Current (nA): Sets the tunnel current value around which the measurement is performed.",
             "toleranceNa": "Tunnel Current Tolerance (nA): Defines the range around the target tunnel current (targetNa) that is still considered valid tunneling.",
-            "startX": "(BETA) Start X Position: Specifies the X position at which the raster scan begins.",
-            "startY": "(BETA) Start Y Position: Specifies the Y position at which the raster scan begins.",
-            "measureMs": "Measurement Time (ms): Defines how long the tunnel current is measured and averaged at each raster point, in milliseconds.",
+            "startX": "Start X Position: Specifies the X position at which the raster scan begins. Must be less than maxX.",
+            "startY": "Start Y Position: Specifies the Y position at which the raster scan begins. Must be less than maxY.",
+            "measureMs": "Measurement Time (ms): Defines how long the tunnel current is measured and averaged at each raster point, in milliseconds. Shortest time is 1ms.",
             "direction": "Scan Direction: Defines the direction in which the raster scan is performed along the X axis.",
-            "maxX": "Maximum X Coordinate: Defines the maximum X position up to which the raster scan is executed.",
-            "maxY": "Maximum Y Coordinate: Defines the maximum Y position up to which the raster scan is executed.",
+            "maxX": "Maximum X Coordinate: Defines the maximum X position up to which the raster scan is executed. Value range: 1..199.",
+            "maxY": "Maximum Y Coordinate: Defines the maximum Y position up to which the raster scan is executed. Value range: 1..199.",
             "multiplicator": "(BETA) Z Scaling Factor: Scales how strongly control adjustments affect the Z piezo voltage.",
         }
 
@@ -128,18 +139,22 @@ class ParameterApp:
 
             self.icons[key] = icon_img
 
-            icon_label = Label(self.frame_edit, image=icon_img) ## Icon Label ##
+            icon_label = Label(self.frame_edit, image=icon_img)  ## Icon Label ##
 
-            parameter_label = Label(self.frame_edit, text=f"{key}:") ## Parameter Itself ##
+            parameter_label = Label(
+                self.frame_edit, text=f"{key}:"
+            )  ## Parameter Itself ##
             parameter_var = StringVar()
             parameter_entry = Entry(self.frame_edit, textvariable=parameter_var)
 
-            tip = self.param_tooltips.get(key, key) ## Tooltip text ##
+            tip = self.param_tooltips.get(key, key)  ## Tooltip text ##
             ToolTip(icon_label, tip)
             ToolTip(parameter_label, tip)
             ToolTip(parameter_entry, tip)
 
-            self.parameter_labels_entries.append((icon_label, parameter_label, parameter_entry))
+            self.parameter_labels_entries.append(
+                (icon_label, parameter_label, parameter_entry)
+            )
             self.parameter_vars[key] = parameter_var
 
         # Grid the labels and entry fields for parameters
@@ -154,19 +169,25 @@ class ParameterApp:
         self.frame_actions = Frame(self.frame_parameter)
         self.frame_actions.grid(column=0, row=1, sticky=W)
 
-        #Adding Save / Load icons
+        # Adding Save / Load icons
         self.btn_save_local = Button(
-            self.frame_files, text="Save", image=self.ui_icons["save"],
-            compound="left", command=self.save_parameters_to_file
+            self.frame_files,
+            text="Save",
+            image=self.ui_icons["save"],
+            compound="left",
+            command=self.save_parameters_to_file,
         )
         self.btn_save_local.grid(column=0, row=0, padx=1, pady=1, sticky=W)
 
         self.btn_load_local = Button(
-            self.frame_files, text="Load", image=self.ui_icons["load"],
-            compound="left", command=self.load_parameters_from_file
+            self.frame_files,
+            text="Load",
+            image=self.ui_icons["load"],
+            compound="left",
+            command=self.load_parameters_from_file,
         )
         self.btn_load_local.grid(column=1, row=0, padx=5, pady=5, sticky=W)
-        #Adding Apply, Default, Exit icons
+        # Adding Apply, Default, Exit icons
         self.btn_apply_parameter_setting = Button(
             self.frame_actions, text="Apply", command=self.apply_parameters
         )
@@ -181,7 +202,6 @@ class ParameterApp:
             self.frame_actions, text="Exit", command=self.return_to_main
         )
         self.btn_back.grid(column=2, row=0, padx=75, pady=1, sticky=E)
-
 
     def _get_param_store_path(self):
         base_dir = os.path.join(os.path.expanduser("~"), ".stm-usb-app")
@@ -242,6 +262,42 @@ class ParameterApp:
         self.write_command("PARAMETER,?")
 
     def apply_parameters(self):
+        # Validate numeric constraints for start/max coordinates before sending
+        def _get_int(name):
+            var = self.parameter_vars.get(name)
+            if var is None:
+                raise ValueError(f"{name} missing")
+            val = var.get()
+            return int(val)
+
+        try:
+            maxX = _get_int("maxX")
+            maxY = _get_int("maxY")
+            startX = _get_int("startX")
+            startY = _get_int("startY")
+        except ValueError as e:
+            messagebox.showerror("Parameter error", f"Invalid value: {e}")
+            return
+        except Exception:
+            messagebox.showerror(
+                "Parameter error",
+                "startX/startY/maxX/maxY must be integer values.",
+            )
+            return
+
+        if not (1 <= maxX <= 199 and 1 <= maxY <= 199):
+            messagebox.showerror(
+                "Parameter error", "maxX and maxY must be between 1 and 199."
+            )
+            return
+
+        if not (startX < maxX and startY < maxY):
+            messagebox.showerror(
+                "Parameter error",
+                "startX must be less than maxX and startY must be less than maxY.",
+            )
+            return
+
         parameters = [entry.get() for _, _, entry in self.parameter_labels_entries]
         sendstring = f"PARAMETER,{','.join(parameters)}"
         try:
@@ -271,8 +327,11 @@ class ParameterApp:
             if key in self.parameter_vars:
                 self.parameter_vars[key].set(value)
 
+
 ## Tooltips for parameters ##
 import tkinter as tk
+
+
 class ToolTip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -281,7 +340,6 @@ class ToolTip:
         widget.bind("<Enter>", self.show, add="+")
         widget.bind("<Leave>", self.hide, add="+")
 
-
     def show(self, event=None):
         if self.tip or not self.text:
             return
@@ -289,7 +347,9 @@ class ToolTip:
         self.tip.wm_overrideredirect(True)  # kein Fensterrahmen
         self.tip.attributes("-topmost", True)
 
-        label = tk.Label(self.tip, text=self.text, borderwidth=1, relief="solid", padx=6, pady=4)
+        label = tk.Label(
+            self.tip, text=self.text, borderwidth=1, relief="solid", padx=6, pady=4
+        )
         label.pack()
 
         x = self.widget.winfo_rootx() + 20
@@ -300,5 +360,3 @@ class ToolTip:
         if self.tip:
             self.tip.destroy()
             self.tip = None
-
-
