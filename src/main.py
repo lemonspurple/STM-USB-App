@@ -10,6 +10,7 @@ import usb_connection
 from gui.app_manager import AppManager
 from gui.menu import create_menu
 from terminal import TerminalView
+import parameters
 
 ## Use fcntl over msvcrt if Linux is used
 IS_WINDOWS = os.name == "nt"
@@ -138,6 +139,13 @@ class MasterGui:
         self.sinus_app = None
         self.target_adc = 0
         self.tolerance_adc = 0
+        # storage for latest device parameters (key -> raw string value)
+        self.parameters = {}
+        # register global provider so other modules can call parameters.get_parameter()
+        try:
+            parameters.set_provider(self)
+        except Exception:
+            pass
 
     def initialize_usb_connection(self):
         # Initialize the USB connection handler
@@ -194,6 +202,19 @@ class MasterGui:
             disable_menu_cb=self.disable_menu,
             enable_menu_cb=self.enable_menu,
         )
+        # expose parameters dict on the app_frame so apps can read it via their master
+        try:
+            if hasattr(self.app_manager, "app_frame"):
+                setattr(self.app_manager.app_frame, "parameters", self.parameters)
+                # expose typed getter bound to MasterGui so apps can call
+                try:
+                    setattr(
+                        self.app_manager.app_frame, "get_parameter", self.get_parameter
+                    )
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
     def connect(self):
         # Establish a connection to the selected COM port
@@ -274,6 +295,25 @@ class MasterGui:
                 if adjust_app and getattr(adjust_app, "is_active", False):
                     adjust_app.update_data(msg)
             elif messagetype == "PARAMETER":
+                # store parameter value for access by apps
+                try:
+                    if len(ms) >= 3:
+                        key = ms[1]
+                        val = ms[2]
+                        self.parameters[key] = val
+                        # keep app_frame.parameters in sync if present
+                        try:
+                            if hasattr(self.app_manager, "app_frame"):
+                                setattr(
+                                    self.app_manager.app_frame,
+                                    "parameters",
+                                    self.parameters,
+                                )
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
                 self.update_terminal(msg)
                 if ms[1] == "targetNa":
                     self.target_adc = self.calculate_adc_value(ms[2])
@@ -333,8 +373,8 @@ class MasterGui:
                         if measure_app:
                             measure_app.update_data(msg)
 
-                    # Plot next set of data
-                    if ms[1] == "0":
+                    # Plot next set of data when the message flag matches the device's startX
+                    if ms[1] == self.parameters.get("startX"):
                         self.update_terminal(f"Processing Y {ms[2]}")
                 except Exception as e:
                     self.update_terminal(f"Error measure: {msg}, \nError: {e}")
@@ -464,6 +504,28 @@ class MasterGui:
         except Exception:
             pass
         self.enable_menu()
+
+    def get_parameter(self, key, cast=int, default=None):
+        """Typed getter for device parameters saved on MasterGui.
+
+        key: parameter name (str)
+        cast: callable to convert the string to desired type (int/float/str). If None, returns raw string.
+        default: returned if parameter missing or conversion fails.
+        """
+        try:
+            val = None
+            if hasattr(self, "parameters") and self.parameters is not None:
+                val = self.parameters.get(key)
+            if val is None:
+                return default
+            if cast is None:
+                return val
+            try:
+                return cast(val)
+            except Exception:
+                return default
+        except Exception:
+            return default
 
     def create_main_interface(self):
         # Clear the existing interface

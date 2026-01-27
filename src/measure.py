@@ -15,10 +15,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm  # Import colormap utilities
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import parameters
 
 
 class MeasureApp:
-    def __init__(self, master, write_command, return_to_main, simulate=False):
+    def __init__(
+        self,
+        master,
+        write_command,
+        return_to_main,
+        simulate=False,
+        start_x=None,
+        start_y=None,
+        max_x=None,
+        max_y=None,
+    ):
         """Create MeasureApp.
 
         master: parent widget
@@ -77,6 +88,36 @@ class MeasureApp:
             except Exception:
                 pass
 
+        # Parameters are read on-demand via the global accessor
+
+        # Prefer explicit constructor values; fall back to global accessor
+        try:
+            self.start_x = (
+                start_x
+                if start_x is not None
+                else parameters.get_parameter("startX", int, 0)
+            )
+            self.start_y = (
+                start_y
+                if start_y is not None
+                else parameters.get_parameter("startY", int, 0)
+            )
+            self.max_x = (
+                max_x
+                if max_x is not None
+                else parameters.get_parameter("maxX", int, 200)
+            )
+            self.max_y = (
+                max_y
+                if max_y is not None
+                else parameters.get_parameter("maxY", int, 200)
+            )
+        except Exception:
+            self.start_x = 0
+            self.start_y = 0
+            self.max_x = 200
+            self.max_y = 200
+
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
         self.is_active = False
@@ -95,6 +136,12 @@ class MeasureApp:
         # Safety check to ensure the object is still active
         if not hasattr(self, "is_active") or not self.is_active:
             return False
+
+        # keep parameter-backed attrs up to date (parameters may arrive asynchronously)
+        try:
+            self._refresh_parameters()
+        except Exception:
+            pass
 
         # Update the Parameter interface with new data
         data = message.split(",")
@@ -132,6 +179,26 @@ class MeasureApp:
 
         # remember last seen y for next update
         self._last_y = y
+
+    def _refresh_parameters(self):
+        """Refresh parameter-backed attributes from the master parameter store."""
+        # refresh typed values using the global parameters accessor
+        try:
+            self.start_x = parameters.get_parameter("startX", int, self.start_x)
+            self.start_y = parameters.get_parameter("startY", int, self.start_y)
+            self.max_x = parameters.get_parameter("maxX", int, self.max_x)
+            self.max_y = parameters.get_parameter("maxY", int, self.max_y)
+        except Exception:
+            pass
+
+    def _deferred_parameter_init(self, attempt, max_attempts=6):
+        """Try a few times (via `after`) to pick up parameters that arrive after UI creation."""
+        try:
+            self._refresh_parameters()
+        except Exception:
+            pass
+        # Deferred retries removed: parameters should be read on-demand.
+        return
 
     def redraw_plot(self):
         # Safety check to ensure the object is still active and has required attributes

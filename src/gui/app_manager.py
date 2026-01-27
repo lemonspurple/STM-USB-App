@@ -7,6 +7,13 @@ from sinus import SinusApp
 from tunnel import TunnelApp
 
 
+def _to_int(v, default=None):
+    try:
+        return int(v)
+    except Exception:
+        return default
+
+
 class AppManager:
     def __init__(
         self,
@@ -53,11 +60,22 @@ class AppManager:
 
     def open_measure(self, simulate=False):
         self._clear_app_frame()
+        # pass current parameters as defaults when available
+        params = getattr(self.app_frame, "parameters", {}) or {}
+        sx = params.get("startX")
+        sy = params.get("startY")
+        mx = params.get("maxX")
+        my = params.get("maxY")
+
         self.measure_app = measure.MeasureApp(
             master=self.app_frame,
             write_command=self.write_command,
             return_to_main=self.return_to_main_cb,
             simulate=simulate,
+            start_x=_to_int(sx, None),
+            start_y=_to_int(sy, None),
+            max_x=_to_int(mx, None),
+            max_y=_to_int(my, None),
         )
         self.disable_menu()
 
@@ -113,7 +131,7 @@ class AppManager:
             pass
         self.disable_menu()
 
-       # Helpers used by MasterGui.dispatch_received_data:
+    # Helpers used by MasterGui.dispatch_received_data:
     def get_adjust_app(self):
         return self.adjust_app
 
