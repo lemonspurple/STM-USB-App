@@ -1,5 +1,10 @@
-import os
-import sys
+"""Tunnel measurement UI pane.
+
+This module provides `TunnelApp`, a small UI that requests tunnel
+measurements from the device and displays ADC/DAC-Z data in a matplotlib
+scatter plot.
+"""
+
 from tkinter import Button, Frame
 
 import matplotlib.pyplot as plt
@@ -96,6 +101,28 @@ class TunnelApp:
         self.target_adc = target_adc
         self.limit_adc = limit_adc
 
+    def _init_plot_elements(self):
+        """(Re)create the basic plot elements (plots and limit lines).
+
+        This is safe to call after clearing the axes.
+        """
+        # create empty plots for adc and z
+        (self.adc_plot,) = self.ax.plot([], [], "o", label="Tunnel")
+        (self.z_plot,) = self.ax.plot([], [], "x", label="DAC Z")
+        # create horizontal limit lines
+        self.limit_hi_line = self.ax.axhline(
+            y=self.target_adc + self.tolerance_adc,
+            color="orange",
+            linestyle="--",
+            label="Limit hi",
+        )
+        self.limit_lo_line = self.ax.axhline(
+            y=self.target_adc - self.tolerance_adc,
+            color="orange",
+            linestyle="--",
+            label="Limit Lo",
+        )
+
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
         self.is_active = False
@@ -160,20 +187,7 @@ class TunnelApp:
     def update_data(self, message):
         if not hasattr(self, "adc_plot"):
             # Initialize plot elements
-            (self.adc_plot,) = self.ax.plot([], [], "o", label="Tunnel")
-            (self.z_plot,) = self.ax.plot([], [], "x", label="DAC Z")
-            self.limit_hi_line = self.ax.axhline(
-                y=self.target_adc + self.tolerance_adc,
-                color="orange",
-                linestyle="--",
-                label="Limit hi",
-            )
-            self.limit_lo_line = self.ax.axhline(
-                y=self.target_adc - self.tolerance_adc,
-                color="orange",
-                linestyle="--",
-                label="Limit Lo",
-            )
+            self._init_plot_elements()
 
         # Update the plot with new data
         data = message.split(",")
@@ -215,8 +229,12 @@ class TunnelApp:
             return False
 
     def redraw_plot(self):
-        # Clear the plot and redraw
+        # Clear the plot and redraw from stored data
         self.ax.clear()
+        # recreate plot elements
+        self._init_plot_elements()
+
+        # scatter adc and z data
         self.ax.scatter(
             range(len(self.adc_data)),
             self.adc_data,
@@ -231,22 +249,8 @@ class TunnelApp:
             marker="x",
             label="DAC Z",
         )
-        self.ax.set_xlim(
-            0, max(100, len(self.adc_data))
-        )  # Adjust x-axis limit based on data length
 
-        self.ax.axhline(
-            y=self.target_adc + self.tolerance_adc,
-            color="orange",
-            linestyle="--",
-            label="Limit hi",
-        )
-        self.ax.axhline(
-            y=self.target_adc - self.tolerance_adc,
-            color="orange",
-            linestyle="--",
-            label="Limit Lo",
-        )
+        # Adjust axes and labels
         self.ax.set_xlim(0, self.tunnel_counts)
         self.ax.set_ylim(-1000, 0xFFFF)  # Set y-axis limit to int16_t range
         self.ax.set_xlabel("Counter")
@@ -254,8 +258,6 @@ class TunnelApp:
         self.ax.set_title("Tunnel Current ADC and DAC Z")
         self.ax.legend()
 
-        # Adjust margins
+        # Adjust margins and redraw
         self.fig.subplots_adjust(left=0.2, right=0.95, top=0.9, bottom=0.1)
-
-        # Redraw the canvas
         self.canvas.draw()

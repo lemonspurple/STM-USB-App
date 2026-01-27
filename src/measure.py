@@ -1,3 +1,12 @@
+"""Measurement UI pane.
+
+Provides `MeasureApp` which displays incoming (x,y,z) measurement points
+in a 3D plot and stores them to timestamped CSV files under `measurements/`.
+
+This refactor extracts plot and file initialization into helpers and adds
+safer file I/O with encoding and basic error handling.
+"""
+
 import os
 from datetime import datetime
 from tkinter import Button, Frame
@@ -10,7 +19,13 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class MeasureApp:
     def __init__(self, master, write_command, return_to_main, simulate=False):
-        # Initialize MeasureApp with callbacks and settings
+        """Create MeasureApp.
+
+        master: parent widget
+        write_command: callable to send commands to device
+        return_to_main: callable to switch UI back to main view
+        simulate: if True, send simulated MEASURE command
+        """
         self.master = master
         self.write_command = write_command
         self.return_to_main = return_to_main
@@ -34,24 +49,9 @@ class MeasureApp:
         self.btn_reset_rotation.pack(pady=10)
         self.btn_reset_rotation.pack_forget()  # Initially hide the Reset Rotation button
 
-        # Initialize the 3D plot
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection="3d")
-        self.x_data = []
-        self.y_data = []
-        self.z_data = []
-
-        # Store the initial rotation state
-        self.initial_elev = self.ax.elev
-        self.initial_azim = self.ax.azim
-
-        # Embed the plot in a Tkinter canvas
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
-        self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        self.canvas.mpl_connect(
-            "motion_notify_event", self.on_plot_hover
-        )  # Connect the hover event
-        self.redraw_plot()
+        # Initialize plotting and file storage
+        self._init_plot()
+        self._create_measurement_file()
 
         # Start the measurement process (only if write_command is callable)
         try:
@@ -63,15 +63,7 @@ class MeasureApp:
         except Exception as e:
             print(f"MeasureApp: error sending command '{cmd}': {e}")
 
-        # Create the measurements folder if it doesn't exist
-        measurements_folder = os.path.join(os.getcwd(), "measurements")
-        os.makedirs(measurements_folder, exist_ok=True)
-
-        # Generate a filename based on the current date and time
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.measurement_file_path = os.path.join(
-            measurements_folder, f"measurement_{timestamp}.csv"
-        )
+        # measurement file created by _create_measurement_file
 
         # Bind the Escape key on the toplevel so it can be unbound cleanly
         try:
@@ -119,17 +111,27 @@ class MeasureApp:
             print(f"Error parsing data: {e}, \n{message}")
             return False
 
-        # Append the data to the file
-        with open(self.measurement_file_path, "a") as file:
-            file.write(f"{x},{y},{z}\n")
+        # Append the data to the file (safe write)
+        try:
+            with open(
+                self.measurement_file_path, "a", encoding="utf-8", newline=""
+            ) as file:
+                file.write(f"{x},{y},{z}\n")
+        except Exception as e:
+            print(f"Warning: failed to write measurement to file: {e}")
 
-        # Update the plot
+        # Update the plot data buffers
+        prev_y = getattr(self, "_last_y", None)
         self.x_data.append(x)
         self.y_data.append(y)
         self.z_data.append(z)
 
-        if x == 0:
+        # Trigger redraw when Y changes from previous point (row change)
+        if prev_y is not None and y != prev_y:
             self.redraw_plot()
+
+        # remember last seen y for next update
+        self._last_y = y
 
     def redraw_plot(self):
         # Safety check to ensure the object is still active and has required attributes
@@ -154,9 +156,8 @@ class MeasureApp:
             # Plot the triangular surface with the new data
             self.ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
 
-        # Redraw the canvas and flush the events to update the display
+        # Redraw the canvas
         self.canvas.draw()
-        self.canvas.flush_events()
 
     def reset_rotation(self):
         # Reset the rotation of the 3D plot to its initial state
@@ -170,3 +171,46 @@ class MeasureApp:
         # Show the Reset Rotation button only if the plot has been rotated
         if self.ax.elev != self.initial_elev or self.ax.azim != self.initial_azim:
             self.btn_reset_rotation.pack(pady=10)
+
+    def _init_plot(self):
+        """Initialize Matplotlib 3D figure, axes and the Tk canvas."""
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection="3d")
+        self.x_data = []
+        self.y_data = []
+        self.z_data = []
+
+        # Store the initial rotation state
+        self.initial_elev = self.ax.elev
+        self.initial_azim = self.ax.azim
+
+        # Embed the plot in a Tkinter canvas
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
+        self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        self.canvas.mpl_connect("motion_notify_event", self.on_plot_hover)
+        self.redraw_plot()
+
+    def _create_measurement_file(self):
+        """Create measurements folder and open a timestamped CSV file.
+
+        If the file already exists, leave it (append mode will be used).
+        """
+        folder = os.path.join(os.getcwd(), "measurements")
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except Exception as e:
+            print(f"Warning: could not create measurements folder: {e}")
+
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        path = os.path.join(folder, f"measurement_{ts}.csv")
+        self.measurement_file_path = path
+
+        # create file with header if not exists
+        if not os.path.exists(self.measurement_file_path):
+            try:
+                with open(
+                    self.measurement_file_path, "w", encoding="utf-8", newline=""
+                ) as f:
+                    f.write("x,y,z\n")
+            except Exception as e:
+                print(f"Warning: could not create measurement file: {e}")

@@ -1,3 +1,9 @@
+"""Terminal widget used by the app: a simple scrollable output area
+with an entry/combo for sending commands and basic history.
+
+Refactor: keep imports minimal and reuse helper methods where possible.
+"""
+
 import os
 from tkinter import (
     END,
@@ -225,22 +231,10 @@ class TerminalView:
         return "break"
 
     def _on_stop(self):
+        # Reuse existing helpers to set and focus the input, and send STOP
         try:
-            # show STOP in entry
-            try:
-                try:
-                    # combobox: set current value
-                    self.entry.set("STOP")
-                except Exception:
-                    # fallback for Entry-like behavior
-                    try:
-                        self.entry.delete(0, END)
-                        self.entry.insert(0, "STOP")
-                    except Exception:
-                        pass
-                self.entry.focus_set()
-            except Exception:
-                pass
+            self.set_input("STOP")
+            self.focus_input()
             if self.write_command:
                 try:
                     self.write_command("STOP")

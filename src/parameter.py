@@ -51,15 +51,15 @@ class ParameterApp:
             "kD": ("float", 0.0, 0.5, None),
             "targetNa": ("float", 0.0, 5, None),
             "toleranceNa": ("float", 0, 0.5, None),
-            "startX": ("int", 1, 199, None),
-            "startY": ("int", 1, 199, None),
+            "startX": ("int", 0, 199, None),
+            "startY": ("int", 0, 199, None),
             "measureMs": ("int", 1, 10, None),
             "direction": ("int", 0, 1, None),
             "maxX": ("int", 1, 199, None),
             "maxY": ("int", 1, 199, None),
             "multiplicator": ("float", None, None, None),
         }
-        parameter_keys = [
+        self.parameter_keys = [
             "kP",
             "kI",
             "kD",
@@ -144,7 +144,7 @@ class ParameterApp:
             "multiplicator": "(BETA) Z Scaling Factor: Scales how strongly control adjustments affect the Z piezo voltage.",
         }
 
-        for i, key in enumerate(parameter_keys):
+        for i, key in enumerate(self.parameter_keys):
             icon_img = None
             icon_filename = self.param_icon_files.get(key)
             if icon_filename:
@@ -309,40 +309,16 @@ class ParameterApp:
         self.write_command("PARAMETER,?")
 
     def apply_parameters(self):
-        # Validate numeric constraints for start/max coordinates before sending
-        def _get_int(name):
-            var = self.parameter_vars.get(name)
-            if var is None:
-                raise ValueError(f"{name} missing")
-            val = var.get()
-            return int(val)
-
-        try:
-            maxX = _get_int("maxX")
-            maxY = _get_int("maxY")
-            startX = _get_int("startX")
-            startY = _get_int("startY")
-        except ValueError as e:
-            messagebox.showerror("Parameter error", f"Invalid value: {e}")
-            return
-        except Exception:
-            messagebox.showerror(
-                "Parameter error",
-                "startX/startY/maxX/maxY must be integer values.",
-            )
-            return
-
-        if not (1 <= maxX <= 199 and 1 <= maxY <= 199):
-            messagebox.showerror(
-                "Parameter error", "maxX and maxY must be between 1 and 199."
-            )
-            return
-
-        if not (startX < maxX and startY < maxY):
-            messagebox.showerror(
-                "Parameter error",
-                "startX must be less than maxX and startY must be less than maxY.",
-            )
+        # Validate all fields before sending; focus first invalid field
+        valid, bad_key = self.validate_all()
+        if not valid:
+            bad_entry = self.parameter_entries.get(bad_key)
+            if bad_entry:
+                try:
+                    bad_entry.focus_set()
+                    bad_entry.select_range(0, "end")
+                except Exception:
+                    pass
             return
 
         parameters = [entry.get() for _, _, entry in self.parameter_labels_entries]
@@ -354,6 +330,40 @@ class ParameterApp:
         except Exception as e:
             error_message = f"ERROR in apply_parameters {e}"
             print(error_message)
+
+    def validate_all(self):
+        """Validate all parameter fields.
+
+        Returns (True, None) if all valid, otherwise (False, first_invalid_key).
+        """
+        for key in self.parameter_keys:
+            # call non-live validation to show dialogs on errors
+            ok = self._validate_field(key, live=False)
+            if not ok:
+                return False, key
+        # Additional cross-field checks
+        try:
+            maxX = int(self.parameter_vars.get("maxX").get())
+            maxY = int(self.parameter_vars.get("maxY").get())
+            startX = int(self.parameter_vars.get("startX").get())
+            startY = int(self.parameter_vars.get("startY").get())
+        except Exception:
+            return False, "startX"
+
+        if not (1 <= maxX <= 199 and 1 <= maxY <= 199):
+            messagebox.showerror(
+                "Parameter error", "maxX and maxY must be between 1 and 199."
+            )
+            return False, "maxX"
+
+        if not (startX < maxX and startY < maxY):
+            messagebox.showerror(
+                "Parameter error",
+                "startX must be less than maxX and startY must be less than maxY.",
+            )
+            return False, "startX"
+
+        return True, None
 
     def set_default_parameters(self):
         try:

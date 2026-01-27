@@ -1,31 +1,43 @@
-import tkinter as tk
-from tkinter import Button, Frame
+"""Small UI for sending a SINUS command and showing a brief label.
+
+This module defines `SinusApp`, a minimal UI pane used to request
+sinusoidal tuning from the device. The class keeps behavior simple and
+isolated so it can be embedded in the main application window.
+"""
+
+from tkinter import Frame, Button, Label
 
 
 class SinusApp:
+    """UI pane for requesting a sinus measurement from the device.
+
+    Parameters
+    - master: parent widget
+    - write_command: callable that sends a command string to the device
+    - return_to_main: callable to switch back to main UI
+    """
+
     def __init__(self, master, write_command, return_to_main):
-        # Initialize Sinus with callbacks and settings
         self.master = master
         self.write_command = write_command
         self.return_to_main = return_to_main
         self.is_active = True
 
-        # Create a frame to hold the widgets
+        # main container
         self.frame = Frame(master)
         self.frame.pack(fill="both", expand=True)
 
-        # Create a frame for the buttons
+        # button row
         self.button_frame = Frame(self.frame)
         self.button_frame.pack(fill="x", pady=10)
 
-        # Create a Stop button to return to the main interface
         self.btn_stop = Button(
             self.button_frame, text="Stop", command=self.wrapper_return_to_main
         )
         self.btn_stop.pack(side="left", padx=10)
 
-        # Create a label to display the sinus signal information
-        self.label = tk.Label(self.frame, text="Sinus signal at ADC X, Y, Z")
+        # informational label
+        self.label = Label(self.frame, text="Sinus signal at ADC X, Y, Z")
         self.label.pack(pady=20)
 
     def wrapper_return_to_main(self):
