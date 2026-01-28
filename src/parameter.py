@@ -94,7 +94,7 @@ class ParameterApp:
             "measureMs": "icon_measureMs.png",
             "direction": "icon_direction.png",
             "maxX": "icon_startX.png",
-            "maxY": "icon_startX.png",
+            "maxY": "icon_startY.png",
             "multiplicator": "icon_multiplicator.png",
             "save": "icon_save.png",
             "load": "icon_load.png",
