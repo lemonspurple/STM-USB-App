@@ -166,38 +166,36 @@ class MasterGui:
         win = Toplevel(self.master)
         win.title("About")
         win.resizable(False, False)
-        win.transient(self.master)   #Above main window
-        win.grab_set()               # modal
+        win.transient(self.master)
+        win.grab_set()
 
-        # Content of about section
         container = ttk.Frame(win, padding=12)
         container.grid(row=0, column=0, sticky="nsew")
 
-        ttk.Label(container, text="About this application", font=("TkDefaultFont", 12, "bold")).grid(
-            row=0, column=0, columnspan=2, sticky="w", pady=(0, 8)
+        ttk.Label(container, text="About", font=("TkDefaultFont", 12, "bold")).grid(
+            row=0, column=0, columnspan=3, sticky="w", pady=(0, 8)
         )
 
-        ttk.Label(container, text="Repositories & Authors:", font=("TkDefaultFont", 10, "bold")).grid(
-            row=1, column=0, columnspan=2, sticky="w", pady=(0, 6)
-        )
+        # Repos
+        ttk.Label(
+            container,
+            text="Repositories / Documentation:",
+            font=("TkDefaultFont", 10, "bold"),
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 6))
 
-        links = [
-            ("TEXT", "TEXT2"),
-            ("TEXT", "TEXT2"),
-            ("TEXT", "TEXT2"),
-            ("TEXT", "TEXT2"),
-            ("TEXT", "TEXT2"),
-            ("TEXT", "TEXT2"),      
+        repo_links = [
+            ("TKInter USB APP", "https://github.com/PeterDirnhofer/tkinter-usb-app"),
+            ("Documentation (English)", "https://github.com/lemonspurple/DIY-Scanning-Tunneling-Microscope"),
+            ("Documentation (German)", "https://500-euro-rtm.de/wiki/index.php?title=500-Euro-Rastertunnelmikroskop"),
         ]
 
-        # Linkhelper 
+        # Linkhelper
         def add_link(row, text, url):
             ttk.Label(container, text="•").grid(row=row, column=0, sticky="nw", padx=(0, 6))
             lbl = ttk.Label(container, text=text, cursor="hand2")
             lbl.grid(row=row, column=1, sticky="w")
             try:
-                f = ("TkDefaultFont", 9, "underline")
-                lbl.configure(font=f)
+                lbl.configure(font=("TkDefaultFont", 9, "underline"))
             except Exception:
                 pass
 
@@ -207,9 +205,39 @@ class MasterGui:
 
             lbl.bind("<Button-1>", _open)
 
-        start_row = 2
-        for idx, (txt, url) in enumerate(links):
-            add_link(start_row + idx, txt, url)
+        row = 2
+        for txt, url in repo_links:
+            add_link(row, txt, url)
+            row += 1
+
+        # Seperators
+        ttk.Separator(container, orient="horizontal").grid(
+            row=row, column=0, columnspan=3, sticky="ew", pady=(10, 10)
+        )
+        row += 1
+
+        # Authorinos
+        ttk.Label(
+            container,
+            text="Programming / Authors:",
+            font=("TkDefaultFont", 10, "bold"),
+        ).grid(row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
+        row += 1
+
+        author_links = [
+            ("Peter Dirnhofer", "https://github.com/PeterDirnhofer"),
+            ("lemonspurple", "https://github.com/lemonspurple"),
+        ]
+
+        for txt, url in author_links:
+            add_link(row, txt, url)
+            row += 1
+
+        # Close
+        btns = ttk.Frame(container)
+        btns.grid(row=row, column=0, columnspan=3, sticky="e", pady=(12, 0))
+        ttk.Button(btns, text="Close", command=win.destroy).grid(row=0, column=0)
+
 
     def setup_gui_interface(self):
         # Create the menu bar (moved to gui/menu.py)
