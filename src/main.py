@@ -2,7 +2,7 @@ import atexit
 import os
 import sys
 import time
-from tkinter import Frame, Tk, messagebox, ttk
+from tkinter import Frame, Tk, messagebox, ttk, Toplevel
 
 import com_port_utils  # Import the com_port_utils module
 import config_utils
@@ -163,7 +163,7 @@ class MasterGui:
             pass
     
     def show_about(self):
-        win = ttk.Toplevel(self.master)
+        win = Toplevel(self.master)
         win.title("About")
         win.resizable(False, False)
         win.transient(self.master)   #Above main window
