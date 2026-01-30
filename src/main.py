@@ -161,6 +161,55 @@ class MasterGui:
                 self.app_manager.set_write_command(self.usb_conn.write_command)
         except Exception:
             pass
+    
+    def show_about(self):
+        win = ttk.Toplevel(self.master)
+        win.title("About")
+        win.resizable(False, False)
+        win.transient(self.master)   #Above main window
+        win.grab_set()               # modal
+
+        # Content of about section
+        container = ttk.Frame(win, padding=12)
+        container.grid(row=0, column=0, sticky="nsew")
+
+        ttk.Label(container, text="About this application", font=("TkDefaultFont", 12, "bold")).grid(
+            row=0, column=0, columnspan=2, sticky="w", pady=(0, 8)
+        )
+
+        ttk.Label(container, text="Repositories & Authors:", font=("TkDefaultFont", 10, "bold")).grid(
+            row=1, column=0, columnspan=2, sticky="w", pady=(0, 6)
+        )
+
+        links = [
+            ("TEXT", "TEXT2"),
+            ("TEXT", "TEXT2"),
+            ("TEXT", "TEXT2"),
+            ("TEXT", "TEXT2"),
+            ("TEXT", "TEXT2"),
+            ("TEXT", "TEXT2"),      
+        ]
+
+        # Linkhelper 
+        def add_link(row, text, url):
+            ttk.Label(container, text="•").grid(row=row, column=0, sticky="nw", padx=(0, 6))
+            lbl = ttk.Label(container, text=text, cursor="hand2")
+            lbl.grid(row=row, column=1, sticky="w")
+            try:
+                f = ("TkDefaultFont", 9, "underline")
+                lbl.configure(font=f)
+            except Exception:
+                pass
+
+            def _open(_evt=None):
+                import webbrowser
+                webbrowser.open_new(url)
+
+            lbl.bind("<Button-1>", _open)
+
+        start_row = 2
+        for idx, (txt, url) in enumerate(links):
+            add_link(start_row + idx, txt, url)
 
     def setup_gui_interface(self):
         # Create the menu bar (moved to gui/menu.py)
@@ -174,6 +223,7 @@ class MasterGui:
             "open_tunnel_simulate": self.open_tunnel_simulate,
             "open_measure_simulate": self.open_measure_simulate,
             "show_simulation_info": self.show_simulation_info,
+            "show_about": self.show_about,
         }
         self.menu_bar = create_menu(self.master, callbacks=callbacks)
 
