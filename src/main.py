@@ -282,10 +282,12 @@ class MasterGui:
         # Dispatch received data based on the current status
         global STATUS
         messages = message.split("\n")
+        
         for msg in messages:
             ms = msg.split(",")
             messagetype = ms[0]
-            if messagetype == "IDLE":
+            # Treat both STOPPED and IDLE as indicating the device is idle
+            if messagetype in ("STOPPED", "IDLE"):
                 self.idle_received = True
             if messagetype == "ADJUST":
                 self.update_terminal(msg)
