@@ -11,7 +11,8 @@ def create_menu(master, callbacks=None):
     callbacks: dict mapping expected names to callables.
     Expected keys: open_settings, on_closing, open_measure, open_parameter,
     open_adjust, open_sinus, open_tunnel, open_tunnel_simulate,
-    open_measure_simulate, show_simulation_info
+    open_measure_simulate, show_simulation_info,
+    show_about
     """
     if callbacks is None:
         callbacks = {}
@@ -24,7 +25,7 @@ def create_menu(master, callbacks=None):
 
     file_menu = Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="File", menu=file_menu)
-    # file_menu.add_separator()
+    file_menu.add_command(label="About…", command=cb("show_about"))
     file_menu.add_command(label="Exit", command=cb("on_closing"))
 
     # Top-level Settings menu with Measuring Parameter

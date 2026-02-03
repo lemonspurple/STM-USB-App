@@ -239,7 +239,7 @@ class ParameterApp:
         # Adding Save / Load icons
         self.btn_save_local = Button(
             self.frame_files,
-            text="Save",
+            text="Export parameters",
             image=self.ui_icons["save"],
             compound="left",
             command=self.save_parameters_to_file,
@@ -248,7 +248,7 @@ class ParameterApp:
 
         self.btn_load_local = Button(
             self.frame_files,
-            text="Load",
+            text="Import parameters",
             image=self.ui_icons["load"],
             compound="left",
             command=self.load_parameters_from_file,
@@ -257,13 +257,13 @@ class ParameterApp:
 
         # Adding Exit, Apply, Default icons (left-to-right)
         self.btn_back = Button(
-            self.frame_actions, text="Close", command=self.return_to_main
+            self.frame_actions, text="Back", command=self.return_to_main
         )
         # add extra right padding so there's clear space before the Apply button
         self.btn_back.grid(column=0, row=0, padx=(1, 20), pady=1, sticky=W)
 
         self.btn_apply_parameter_setting = Button(
-            self.frame_actions, text="Save to microscope", command=self.apply_parameters
+            self.frame_actions, text="Save To Microscope", command=self.apply_parameters
         )
         self.btn_apply_parameter_setting.grid(column=1, row=0, padx=5, pady=1, sticky=W)
         ToolTip(self.btn_apply_parameter_setting, "Save settings to microscope.")

@@ -2,7 +2,7 @@ import atexit
 import os
 import sys
 import time
-from tkinter import Frame, Tk, messagebox, ttk
+from tkinter import Frame, Tk, messagebox, ttk, Toplevel
 
 import com_port_utils  # Import the com_port_utils module
 import config_utils
@@ -161,6 +161,83 @@ class MasterGui:
                 self.app_manager.set_write_command(self.usb_conn.write_command)
         except Exception:
             pass
+    
+    def show_about(self):
+        win = Toplevel(self.master)
+        win.title("About")
+        win.resizable(False, False)
+        win.transient(self.master)
+        win.grab_set()
+
+        container = ttk.Frame(win, padding=12)
+        container.grid(row=0, column=0, sticky="nsew")
+
+        ttk.Label(container, text="About", font=("TkDefaultFont", 12, "bold")).grid(
+            row=0, column=0, columnspan=3, sticky="w", pady=(0, 8)
+        )
+
+        # Repos
+        ttk.Label(
+            container,
+            text="Repositories / Documentation:",
+            font=("TkDefaultFont", 10, "bold"),
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 6))
+
+        repo_links = [
+            ("TKInter USB APP", "https://github.com/PeterDirnhofer/tkinter-usb-app"),
+            ("Documentation (English)", "https://github.com/lemonspurple/DIY-Scanning-Tunneling-Microscope"),
+            ("Documentation (German)", "https://500-euro-rtm.de/wiki/index.php?title=500-Euro-Rastertunnelmikroskop"),
+        ]
+
+        # Linkhelper
+        def add_link(row, text, url):
+            ttk.Label(container, text="•").grid(row=row, column=0, sticky="nw", padx=(0, 6))
+            lbl = ttk.Label(container, text=text, cursor="hand2")
+            lbl.grid(row=row, column=1, sticky="w")
+            try:
+                lbl.configure(font=("TkDefaultFont", 9, "underline"))
+            except Exception:
+                pass
+
+            def _open(_evt=None):
+                import webbrowser
+                webbrowser.open_new(url)
+
+            lbl.bind("<Button-1>", _open)
+
+        row = 2
+        for txt, url in repo_links:
+            add_link(row, txt, url)
+            row += 1
+
+        # Seperators
+        ttk.Separator(container, orient="horizontal").grid(
+            row=row, column=0, columnspan=3, sticky="ew", pady=(10, 10)
+        )
+        row += 1
+
+        # Authorinos
+        ttk.Label(
+            container,
+            text="Programming / Authors:",
+            font=("TkDefaultFont", 10, "bold"),
+        ).grid(row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
+        row += 1
+
+        author_links = [
+            ("Peter Dirnhofer", "https://github.com/PeterDirnhofer"),
+            ("lemonspurple", "https://github.com/lemonspurple"),
+        ]
+
+        for txt, url in author_links:
+            add_link(row, txt, url)
+            row += 1
+
+        # Close
+        btns = ttk.Frame(container)
+        btns.grid(row=row, column=0, columnspan=3, sticky="e", pady=(12, 0))
+        ttk.Button(btns, text="Close", command=win.destroy).grid(row=0, column=0)
+
 
     def setup_gui_interface(self):
         # Create the menu bar (moved to gui/menu.py)
@@ -174,6 +251,7 @@ class MasterGui:
             "open_tunnel_simulate": self.open_tunnel_simulate,
             "open_measure_simulate": self.open_measure_simulate,
             "show_simulation_info": self.show_simulation_info,
+            "show_about": self.show_about,
         }
         self.menu_bar = create_menu(self.master, callbacks=callbacks)
 
