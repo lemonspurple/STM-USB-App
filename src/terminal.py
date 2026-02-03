@@ -260,14 +260,54 @@ class TerminalView:
                 if not self.terminal.winfo_exists():
                     return
             except Exception:
-                # If winfo_exists isn't available for some reason, proceed and handle exceptions
                 pass
 
+            # Use after() when called from a background thread so Tk calls run on GUI thread.
+            try:
+                import threading
+
+                if threading.current_thread() is threading.main_thread():
+                    # main thread: update directly
+                    self._do_update(message)
+                else:
+                    # background thread: schedule on GUI event loop
+                    try:
+                        self.parent.after(0, lambda: self._do_update(message))
+                    except Exception:
+                        # last-resort: attempt direct update and fallback to printing
+                        try:
+                            self.terminal.insert(END, message + "\n")
+                            self.terminal.see(END)
+                        except Exception:
+                            print(message)
+            except Exception:
+                # If threading import fails or unexpected error, schedule via after when possible
+                try:
+                    self.parent.after(0, lambda: self._do_update(message))
+                except Exception:
+                    try:
+                        self.terminal.insert(END, message + "\n")
+                        self.terminal.see(END)
+                    except Exception:
+                        print(message)
+        except Exception as e:
+            print(f"TerminalView update error: {e}")
+
+    def _do_update(self, message):
+        """Perform the actual Text widget update. Must run on GUI thread."""
+        try:
+            if not getattr(self, "terminal", None):
+                return
+            try:
+                if not self.terminal.winfo_exists():
+                    return
+            except Exception:
+                pass
             self.terminal.insert(END, message + "\n")
             self.terminal.see(END)
         except Exception as e:
             # Avoid noisy Tcl errors when the widget was destroyed concurrently
-            print(f"TerminalView update error: {e}")
+            print(f"TerminalView _do_update error: {e}")
 
     def clear(self):
         try:

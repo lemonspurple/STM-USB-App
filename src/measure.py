@@ -112,11 +112,22 @@ class MeasureApp:
                 if max_y is not None
                 else parameters.get_parameter("maxY", int, 200)
             )
+            
+            
         except Exception:
             self.start_x = 0
             self.start_y = 0
             self.max_x = 200
             self.max_y = 200
+            
+            
+        # Print initial parameter values to the terminal for debugging
+        try:
+            print(
+                f"MeasureApp: startX={self.start_x}, startY={self.start_y}, maxX={self.max_x}, maxY={self.max_y}"
+            )
+        except Exception:
+            pass
 
     def wrapper_return_to_main(self):
         # Set is_active to False and return to the main interface
@@ -188,6 +199,13 @@ class MeasureApp:
             self.start_y = parameters.get_parameter("startY", int, self.start_y)
             self.max_x = parameters.get_parameter("maxX", int, self.max_x)
             self.max_y = parameters.get_parameter("maxY", int, self.max_y)
+            # Print refreshed parameter values to the terminal
+            try:
+                print(
+                    f"MeasureApp (params refreshed): startX={self.start_x}, startY={self.start_y}, maxX={self.max_x}, maxY={self.max_y}"
+                )
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -220,8 +238,38 @@ class MeasureApp:
             y = np.array(self.y_data)
             z = np.array(self.z_data)
 
-            # Plot the triangular surface with the new data
-            self.ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
+            # Avoid passing degenerate data to the Delaunay triangulation (qhull).
+            # - Require at least 3 unique (x,y) points
+            # - Ensure points are not (near-)collinear
+            try:
+                xy = np.vstack((x, y)).T
+                # count unique (x,y) pairs
+                uniq_xy = np.unique(xy, axis=0)
+                if uniq_xy.shape[0] < 3:
+                    print("MeasureApp: not enough unique (x,y) points for triangulation; skipping trisurf")
+                    # fallback: simple scatter
+                    self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
+                else:
+                    # check for collinearity: rank < 2 => collinear
+                    centered = uniq_xy - uniq_xy.mean(axis=0)
+                    rank = np.linalg.matrix_rank(centered)
+                    if rank < 2:
+                        print("MeasureApp: (x,y) points are collinear; skipping trisurf")
+                        self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
+                    else:
+                        # safe to attempt triangular surface; catch qhull errors
+                        try:
+                            self.ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
+                        except Exception as e:
+                            print(f"MeasureApp: triangulation failed ({e}); falling back to scatter")
+                            self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
+            except Exception as e:
+                # Protect plotting from any unexpected failures
+                print(f"MeasureApp: error preparing plot data: {e}")
+                try:
+                    self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
+                except Exception:
+                    pass
 
         # Redraw the canvas
         self.canvas.draw()
