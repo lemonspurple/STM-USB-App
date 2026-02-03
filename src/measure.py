@@ -9,7 +9,7 @@ safer file I/O with encoding and basic error handling.
 
 import os
 from datetime import datetime
-from tkinter import Button, Frame
+from tkinter import Button, Frame, Label
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,6 +52,15 @@ class MeasureApp:
             self.frame, text="Close", command=self.wrapper_return_to_main
         )
         self.btn_back.pack(anchor="w", padx=10, pady=10)
+        # Status label to show short status messages to the user
+        try:
+            self.status_label = Label(self.frame, text="")
+            self.status_label.pack(anchor="w", padx=10, pady=(0, 6))
+        except Exception:
+            self.status_label = None
+        # Debounce redraws to avoid excessive plotting when many packets arrive
+        self._redraw_scheduled = False
+        self._redraw_delay_ms = 100
 
         # Create a Reset Rotation button to reset the 3D plot rotation
         self.btn_reset_rotation = Button(
@@ -148,11 +157,9 @@ class MeasureApp:
         if not hasattr(self, "is_active") or not self.is_active:
             return False
 
-        # keep parameter-backed attrs up to date (parameters may arrive asynchronously)
-        try:
-            self._refresh_parameters()
-        except Exception:
-            pass
+        # NOTE: do not refresh parameters here to avoid per-packet reloading.
+        # Parameter refresh should happen at well-defined moments (e.g. on UI change
+        # or at measurement start) to keep measurement values stable.
 
         # Update the Parameter interface with new data
         data = message.split(",")
@@ -186,11 +193,15 @@ class MeasureApp:
 
         # Trigger redraw when Y changes from previous point (row change)
         if prev_y is not None and y != prev_y:
-            self.redraw_plot()
+            # Immediate redraw on new row
+            try:
+                self.redraw_plot()
+            except Exception:
+                pass
 
         # remember last seen y for next update
         self._last_y = y
-
+        
     def _refresh_parameters(self):
         """Refresh parameter-backed attributes from the master parameter store."""
         # refresh typed values using the global parameters accessor
@@ -217,6 +228,17 @@ class MeasureApp:
             pass
         # Deferred retries removed: parameters should be read on-demand.
         return
+
+    def _perform_redraw(self):
+        """Called on the GUI thread (via after) to perform the queued redraw."""
+        try:
+            self._redraw_scheduled = False
+            try:
+                self.redraw_plot()
+            except Exception:
+                pass
+        except Exception:
+            pass
 
     def redraw_plot(self):
         # Safety check to ensure the object is still active and has required attributes
@@ -246,22 +268,40 @@ class MeasureApp:
                 # count unique (x,y) pairs
                 uniq_xy = np.unique(xy, axis=0)
                 if uniq_xy.shape[0] < 3:
-                    print("MeasureApp: not enough unique (x,y) points for triangulation; skipping trisurf")
+                    msg = "MeasureApp: not enough unique (x,y) points for triangulation; skipping trisurf"
+                    print(msg)
                     # fallback: simple scatter
                     self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
+                    try:
+                        if getattr(self, "status_label", None):
+                            self.status_label.config(text="Plot: not enough unique (x,y), using scatter")
+                    except Exception:
+                        pass
                 else:
                     # check for collinearity: rank < 2 => collinear
                     centered = uniq_xy - uniq_xy.mean(axis=0)
                     rank = np.linalg.matrix_rank(centered)
                     if rank < 2:
-                        print("MeasureApp: (x,y) points are collinear; skipping trisurf")
+                        msg = "MeasureApp: (x,y) points are collinear; skipping trisurf"
+                        print(msg)
                         self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
+                        try:
+                            if getattr(self, "status_label", None):
+                                self.status_label.config(text="Plot: (x,y) collinear, using scatter")
+                        except Exception:
+                            pass
                     else:
                         # safe to attempt triangular surface; catch qhull errors
                         try:
                             self.ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, linewidth=0.2)
                         except Exception as e:
-                            print(f"MeasureApp: triangulation failed ({e}); falling back to scatter")
+                            msg = f"MeasureApp: triangulation failed ({e}); falling back to scatter"
+                            print(msg)
+                            try:
+                                if getattr(self, "status_label", None):
+                                    self.status_label.config(text="Plot: triangulation failed, using scatter")
+                            except Exception:
+                                pass
                             self.ax.scatter(x, y, z, c=z, cmap=cm.coolwarm)
             except Exception as e:
                 # Protect plotting from any unexpected failures
