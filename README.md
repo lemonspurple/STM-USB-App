@@ -95,6 +95,21 @@ Select `main.py` in `src` folder . Click the **Run** button (Run Python File) to
 
 
 
+## ADJUST / ADC
+
+- **ADJUST**: Opened by `ADJUST`.
+- While ADJUST is active, the TIP sends: `TIP,X,Y,Z`.
+- Use ADJUST messages to set DAC outputs.
+- **ADC is received** by the host and parsed as three values.
+
+Receive example:
+
+`ADJUST,0.640,1.921,10243`
+
+- First value: ADC voltage (V).
+- Second value: calculated current (nA). Calculated by ESP32
+- Third value: ADC raw value (integer).
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for more details.
