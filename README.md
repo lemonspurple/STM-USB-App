@@ -2,6 +2,9 @@
 
 With this app, the 500 EUR RTM is controlled via USB.
 
+## Run
+Open the dist folder and execute 500-STM-GUI.exe on Windows or the AppImage version on Linux.  
+If this doesn't work, proceed with the **Setup Instructions** below.
 
 ## Setup Instructions
 
