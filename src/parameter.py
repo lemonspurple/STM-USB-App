@@ -18,7 +18,6 @@ from tkinter import (
 import tkinter
 from gui.tooltip import ToolTip
 
-
 class ParameterApp:
     def __init__(self, master, write_command, return_to_main):
         self.master = master
